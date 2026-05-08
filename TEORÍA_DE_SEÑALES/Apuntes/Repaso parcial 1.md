@@ -1,220 +1,309 @@
 # Repaso parcial 1
 
-## 1. Señales aleatorias y estadística básica
+Este apunte está escrito como un texto de teoría para estudiar el parcial. La intención no es memorizar fórmulas sueltas, sino entender de dónde salen, por qué se usan y qué significan físicamente.
 
-### 1. Idea principal
+> [!IMPORTANT]
+> En Teoría de Señales casi todo se conecta por una ruta: estadística de la señal, autocorrelación, PSD, paso por sistemas LTI, ruido, modulación y demodulación.
 
-Una **señal aleatoria** es una señal cuyo valor no se puede predecir exactamente antes de observarla. En vez de describirla con una única función determinista, se describe mediante un **proceso aleatorio**, es decir, una familia de posibles señales.
+---
 
-- **Proceso aleatorio:** regla que asigna una función temporal a cada resultado de un experimento aleatorio.
-- **Señal aleatoria continua:** proceso definido para tiempo continuo, por ejemplo \(x(t)\).
-- **Señal aleatoria discreta:** proceso definido en instantes discretos, por ejemplo \(x[n]\).
-- **Realización:** una señal concreta obtenida al repetir el experimento una vez.
-- **Observación:** el valor medido de una realización en un intervalo o instante.
-- **Ensamble:** conjunto de todas las realizaciones posibles.
-- **Promedio de ensamble:** promedio entre realizaciones en un mismo instante.
-- **Promedio temporal:** promedio a lo largo del tiempo de una realización.
+# 1. Señales aleatorias y estadística básica
 
-El objetivo es reemplazar la descripción exacta, que no se conoce, por estadísticas: media, varianza, momentos, RMS y potencia.
+## 1.1 Por qué aparece la idea de señal aleatoria
 
-Un **proceso de segundo orden** es un proceso para el cual existen y son finitos los momentos de orden 1 y 2, especialmente \(E\{x(t)\}\) y \(E\{|x(t)|^2\}\). Esto permite hablar de media, potencia, varianza y autocorrelación.
+En señales deterministas, una función como \(x(t)=\cos(2\pi f_0t)\) queda completamente definida. Si conozco la fórmula, conozco el valor de la señal en cualquier instante.
 
-### 2. Fórmulas principales
+Pero muchas señales reales no se pueden describir así. El ruido térmico, interferencias, tráfico de comunicaciones, fluctuaciones de sensores o señales medidas en laboratorio cambian de una observación a otra. No significa que no podamos estudiarlas; significa que debemos describirlas mediante estadísticas.
 
-Media o esperanza:
+Un **proceso aleatorio** es un modelo que produce señales posibles. Cada vez que ocurre el experimento aleatorio aparece una señal temporal distinta. A cada una de esas señales se le llama **realización**.
+
+Por ejemplo, si mido ruido en un resistor durante diez segundos, obtengo una curva. Si repito la medición, obtengo otra curva. Ninguna curva aislada es "todo el proceso"; cada una es una realización.
+
+## 1.2 Proceso, realización, observación y ensamble
+
+Un proceso aleatorio se puede imaginar como una colección de señales:
+
+$$
+x(t,\zeta)
+$$
+
+donde \(t\) es el tiempo y \(\zeta\) representa el resultado aleatorio del experimento. Si fijo \(\zeta=\zeta_1\), obtengo una realización:
+
+$$
+x(t,\zeta_1)
+$$
+
+Si fijo el tiempo \(t=t_0\), entonces \(x(t_0,\zeta)\) es una variable aleatoria, porque cambia entre realizaciones.
+
+El **ensamble** es el conjunto de todas las realizaciones posibles. El **promedio de ensamble** promedia entre realizaciones para un mismo instante. El **promedio temporal** promedia una sola realización a lo largo del tiempo.
+
+Una **señal aleatoria continua** se define para todo tiempo continuo:
+
+$$
+x(t)
+$$
+
+Una **señal aleatoria discreta** se define solo en instantes enteros:
+
+$$
+x[n]
+$$
+
+## 1.3 Esperanza matemática y momentos
+
+La herramienta central para describir procesos aleatorios es la esperanza matemática. La esperanza no es un valor instantáneo de la señal; es un promedio estadístico.
+
+La media de un proceso es:
 
 $$
 \mu_x(t)=E\{x(t)\}
 $$
 
-Momento de orden \(n\):
+Esta fórmula dice: tome el valor de la señal en el instante \(t\), mire todos los valores posibles entre realizaciones y calcule su promedio.
+
+Los momentos generalizan esta idea:
 
 $$
 m_n(t)=E\{x^n(t)\}
 $$
 
-Varianza:
+El primer momento es la media. El segundo momento, \(E\{x^2(t)\}\), es muy importante porque se relaciona con potencia, RMS y varianza.
+
+## 1.4 Media, componente DC y significado físico
+
+La media:
 
 $$
-\sigma_x^2(t)=E\{(x(t)-\mu_x(t))^2\}
+\mu_x(t)=E\{x(t)\}
 $$
 
-Potencia promedio:
+representa el nivel promedio de la señal. En señales eléctricas, se interpreta como componente DC. Si la media es cero, la señal oscila alrededor de cero. Si la media es positiva o negativa, hay un desplazamiento constante.
 
-$$
-P_x=E\{|x(t)|^2\}
-$$
-
-Valor RMS:
-
-$$
-x_{RMS}=\sqrt{E\{x^2(t)\}}
-$$
-
-Relación útil para señales reales:
-
-$$
-P_x=E\{x^2(t)\}=\sigma_x^2(t)+\mu_x^2(t)
-$$
-
-Componente DC:
+La componente DC es:
 
 $$
 x_{DC}=\mu_x
 $$
 
-Componente alternante:
+La componente alternante se obtiene quitando esa parte constante:
 
 $$
 x_{AC}(t)=x(t)-\mu_x
 $$
 
-### 3. Significado de las variables
+La razón de separar DC y AC es que una señal puede tener potencia por estar desplazada y también por estar fluctuando. La media mide el desplazamiento; la varianza mide la fluctuación.
 
-- \(x(t)\): señal aleatoria en tiempo continuo.
-- \(x[n]\): señal aleatoria en tiempo discreto.
-- \(E\{\cdot\}\): esperanza matemática, promedio estadístico sobre el ensamble.
-- \(\mu_x(t)\): media del proceso en el instante \(t\).
-- \(m_n(t)\): momento de orden \(n\).
-- \(\sigma_x^2(t)\): varianza.
-- \(\sigma_x(t)\): desviación estándar, raíz de la varianza.
-- \(P_x\): potencia promedio estadística.
-- \(x_{RMS}\): valor eficaz o raíz cuadrática media.
-- \(x_{DC}\): componente constante.
-- \(x_{AC}(t)\): fluctuación alrededor de la media.
+## 1.5 Varianza y desviación estándar
 
-### 4. ¿Por qué se hace esto?
-
-Cuando una señal es aleatoria, no basta con decir cuánto vale en un instante. Se necesitan cantidades que resuman su comportamiento:
-
-- La **media** dice alrededor de qué nivel se concentra la señal.
-- La **varianza** mide cuánto se dispersa alrededor de la media.
-- El **RMS** mide el valor eficaz de la señal.
-- La **potencia** mide energía promedio por unidad de tiempo, o intensidad cuadrática promedio.
-
-Se usan esperanzas porque el valor exacto cambia entre realizaciones, pero sus estadísticas pueden ser estables y útiles para diseño, análisis y medición.
-
-### 5. Interpretación física
-
-La **media** es el nivel DC de la señal. Si una señal eléctrica tiene media positiva, tiene un desplazamiento constante hacia arriba. Si tiene media cero, no tiene componente DC.
-
-La **varianza** mide la potencia de la parte alternante cuando la señal tiene media constante:
+La varianza mide qué tan lejos se alejan los valores de la señal respecto a su media:
 
 $$
-\sigma_x^2=E\{(x-\mu_x)^2\}
+\sigma_x^2(t)=E\{(x(t)-\mu_x(t))^2\}
 $$
 
-La **potencia** incluye tanto la parte DC como la parte alternante:
+Primero se resta la media para medir solo la fluctuación. Luego se eleva al cuadrado para evitar cancelación entre valores positivos y negativos. Finalmente se promedia estadísticamente.
+
+La desviación estándar es:
 
 $$
-P_x=\mu_x^2+\sigma_x^2
+\sigma_x(t)=\sqrt{\sigma_x^2(t)}
 $$
 
-El **RMS** es la raíz de la potencia para señales reales:
+Tiene las mismas unidades que la señal. Por eso suele ser más fácil de interpretar que la varianza.
+
+Físicamente, una varianza grande significa que la señal cambia mucho alrededor de su nivel promedio. Una varianza pequeña significa que la señal está más concentrada cerca de la media.
+
+## 1.6 Potencia promedio y RMS
+
+En señales, la potencia se asocia con el promedio cuadrático. Para procesos aleatorios:
+
+$$
+P_x=E\{|x(t)|^2\}
+$$
+
+Si la señal es real, esto se reduce a:
+
+$$
+P_x=E\{x^2(t)\}
+$$
+
+El valor RMS es:
+
+$$
+x_{RMS}=\sqrt{E\{x^2(t)\}}
+$$
+
+Por tanto, para señales reales:
 
 $$
 x_{RMS}=\sqrt{P_x}
 $$
 
-Por eso no son lo mismo:
+El RMS se llama valor eficaz porque una señal alterna con cierto RMS produce la misma potencia promedio que una señal constante de ese valor.
 
-| Cantidad | Qué mide | Incluye DC | Unidades |
-|---|---:|---:|---|
-| Media | Nivel promedio | Sí | Igual a \(x\) |
-| Varianza | Dispersión respecto a la media | No | \(x^2\) |
-| RMS | Valor eficaz | Sí | Igual a \(x\) |
-| Potencia | Promedio cuadrático | Sí | \(x^2\) |
+## 1.7 De dónde sale \(P_x=\sigma_x^2+\mu_x^2\)
 
-### 6. Recuadro importante
+Para ver la conexión entre potencia, media y varianza, escribimos:
+
+$$
+x(t)=\mu_x+\bigl(x(t)-\mu_x\bigr)
+$$
+
+Ahora elevamos al cuadrado:
+
+$$
+x^2(t)=\mu_x^2+2\mu_x\bigl(x(t)-\mu_x\bigr)+\bigl(x(t)-\mu_x\bigr)^2
+$$
+
+Aplicando esperanza:
+
+$$
+E\{x^2(t)\}
+=
+\mu_x^2
++
+2\mu_x E\{x(t)-\mu_x\}
++
+E\{(x(t)-\mu_x)^2\}
+$$
+
+Pero:
+
+$$
+E\{x(t)-\mu_x\}=E\{x(t)\}-\mu_x=0
+$$
+
+Entonces:
+
+$$
+P_x=E\{x^2(t)\}=\mu_x^2+\sigma_x^2
+$$
+
+Esta ecuación explica físicamente que la potencia total tiene dos partes: potencia DC y potencia alternante.
+
+## 1.8 Proceso de segundo orden
+
+Un proceso es de **segundo orden** si existen y son finitos los momentos necesarios hasta orden dos:
+
+$$
+E\{x(t)\}
+$$
+
+$$
+E\{|x(t)|^2\}
+$$
+
+Esto importa porque la mayor parte del curso trabaja con media, varianza, autocorrelación y PSD. Todas esas cantidades necesitan que el segundo momento exista.
 
 > [!IMPORTANT]
-> Para una señal real de media constante: \(P_x=E\{x^2\}=\sigma_x^2+\mu_x^2\). Si \(\mu_x=0\), entonces potencia y varianza coinciden.
-> Memoriza: media, varianza, potencia, RMS y la relación \(P_x=\sigma_x^2+\mu_x^2\).
-> Debes saber demostrar: que la potencia se separa en componente DC más componente alternante.
-
-> [!NOTE]
-> La media describe el centro de la señal; la varianza describe cuánto se mueve alrededor de ese centro; el RMS describe el tamaño eficaz total.
+> Media, varianza, RMS y potencia no son lo mismo. La media mide nivel DC; la varianza mide fluctuación; la potencia mide promedio cuadrático total; el RMS es la raíz de la potencia.
 
 > [!WARNING]
-> No confundas RMS con media. Una señal senoidal pura de media cero tiene RMS distinto de cero.
+> Si \(\mu_x\neq0\), no puedes decir que potencia y varianza son iguales.
 
 > [!TIP]
-> En parcial, si te piden potencia de una señal aleatoria, busca \(E\{|x(t)|^2\}\), no \(E\{x(t)\}\).
+> En un problema, primero calcula \(E\{x(t)\}\). Después decide si necesitas dispersión \(\sigma_x^2\), potencia \(P_x\) o valor eficaz \(x_{RMS}\).
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
-1. Dado un proceso aleatorio, calcule \(\mu_x(t)\), \(\sigma_x^2(t)\), \(x_{RMS}\) y \(P_x\).
-2. Explique la diferencia entre realización, observación y ensamble.
-3. Demuestre que \(P_x=\sigma_x^2+\mu_x^2\) para una señal real.
-4. Interprete físicamente la media y la varianza de una señal de ruido.
+1. Explique la diferencia entre proceso aleatorio, realización, observación y ensamble.
+2. Dada una señal aleatoria, calcule media, varianza, RMS y potencia.
+3. Demuestre que \(P_x=\sigma_x^2+\mu_x^2\).
+4. Interprete físicamente una señal con media cero y varianza alta.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Creer que una realización es todo el proceso aleatorio.
-2. Calcular la potencia como \(E\{x(t)\}\) en lugar de \(E\{|x(t)|^2\}\).
-3. Olvidar que la varianza mide dispersión respecto a la media, no respecto a cero.
-4. Decir que RMS y desviación estándar siempre son iguales; solo coinciden si la media es cero.
-
-### 9. Mini-ejemplo
-
-Sea \(x(t)=A+n(t)\), donde \(A\) es constante y \(n(t)\) tiene media cero y varianza \(\sigma_n^2\).
-
-Media:
+Sea:
 
 $$
-\mu_x=E\{A+n(t)\}=A
+x(t)=3+n(t)
 $$
 
-Varianza:
+donde \(n(t)\) tiene media cero y varianza \(4\). Entonces:
 
 $$
-\sigma_x^2=E\{(x(t)-A)^2\}=E\{n^2(t)\}=\sigma_n^2
+\mu_x=3
 $$
 
-Potencia:
-
 $$
-P_x=A^2+\sigma_n^2
+\sigma_x^2=4
 $$
 
-Interpretación: \(A^2\) es potencia DC y \(\sigma_n^2\) es potencia fluctuante.
+$$
+P_x=\mu_x^2+\sigma_x^2=9+4=13
+$$
 
-Ejercicios guía:
+$$
+x_{RMS}=\sqrt{13}
+$$
 
-1. Calcule media y RMS de \(x(t)=3+n(t)\), con \(\sigma_n^2=4\).
-2. Determine cuándo \(P_x=\sigma_x^2\).
-3. Explique qué representa una media negativa en una señal eléctrica.
+La señal tiene una componente DC igual a \(3\) y una componente aleatoria cuya potencia alternante es \(4\).
 
 ---
 
-## 2. Estacionariedad y ergodicidad
+# 2. Estacionariedad y ergodicidad
 
-### 1. Idea principal
+## 2.1 El problema de las estadísticas que cambian con el tiempo
 
-La **estacionariedad** indica que las estadísticas de un proceso no cambian al desplazar el origen temporal. En cursos de señales se usa mucho la **estacionariedad en sentido amplio**, o **WSS** por sus siglas en inglés.
+Un proceso aleatorio puede tener estadísticas que cambian con el tiempo. Por ejemplo, el ruido de un circuito durante el encendido no tiene necesariamente las mismas propiedades que después de alcanzar régimen permanente.
 
-Un proceso es **WSS** si cumple dos condiciones:
+La **estacionariedad** describe procesos cuyas estadísticas no cambian al mover el origen temporal. En su forma completa, exige que todas las distribuciones estadísticas sean invariantes ante desplazamientos temporales. Esa definición es fuerte y difícil de verificar.
 
-1. Su media es constante.
-2. Su autocorrelación depende solo del retardo \(\tau=t_2-t_1\), no de los tiempos absolutos.
+Por eso en señales se usa mucho la **estacionariedad en sentido amplio**, llamada WSS. Es una versión basada solo en estadísticas de primer y segundo orden.
 
-La **ergodicidad** indica que las estadísticas del ensamble pueden obtenerse a partir de una sola realización suficientemente larga. Esto es clave cuando se trabaja con datos medidos, porque en laboratorio casi nunca se tiene acceso a infinitas realizaciones.
+## 2.2 Proceso WSS
 
-### 2. Fórmulas principales
+Un proceso es WSS si cumple dos condiciones.
 
-Media constante:
+Primera condición: media constante.
 
 $$
 E\{x(t)\}=\mu_x=\text{constante}
 $$
 
-Autocorrelación WSS:
+Esto significa que el nivel promedio no depende del instante.
+
+Segunda condición: la autocorrelación depende solo del retardo.
 
 $$
 R_x(t_1,t_2)=R_x(t_2-t_1)=R_x(\tau)
 $$
 
-Media temporal para un proceso ergódico en media:
+La autocorrelación general compara la señal en dos tiempos \(t_1\) y \(t_2\). En un proceso WSS no importa dónde están esos tiempos en el eje temporal; solo importa qué tan separados están.
+
+El retardo es:
+
+$$
+\tau=t_2-t_1
+$$
+
+## 2.3 Por qué WSS simplifica todo
+
+Si un proceso no es WSS, la autocorrelación depende de dos variables:
+
+$$
+R_x(t_1,t_2)
+$$
+
+Eso hace que el análisis sea más difícil, porque la relación estadística entre valores de la señal cambia con el tiempo absoluto.
+
+Si el proceso es WSS, basta con una variable:
+
+$$
+R_x(\tau)
+$$
+
+Esto permite hablar de memoria temporal, potencia y PSD de manera estable. De hecho, el teorema de Wiener-Khinchine se formula para procesos WSS.
+
+## 2.4 Promedio de ensamble y promedio temporal
+
+El promedio de ensamble se calcula mirando muchas realizaciones en el mismo instante. La media estadística es:
+
+$$
+\mu_x=E\{x(t)\}
+$$
+
+Pero en laboratorio normalmente no tenemos infinitas realizaciones. Tenemos una medición larga. Entonces usamos el promedio temporal:
 
 $$
 \mu_x=
@@ -223,7 +312,7 @@ $$
 \int_0^T x(t)\,dt
 $$
 
-Autocorrelación temporal para un proceso ergódico en autocorrelación:
+Para autocorrelación temporal:
 
 $$
 R_x(\tau)=
@@ -232,149 +321,174 @@ R_x(\tau)=
 \int_0^T x(t)x^*(t+\tau)\,dt
 $$
 
-### 3. Significado de las variables
+Estas fórmulas dicen que una sola realización puede revelar estadísticas del proceso si el proceso es ergódico.
 
-- \(t_1,t_2\): instantes absolutos.
-- \(\tau=t_2-t_1\): retardo temporal.
-- \(\mu_x\): media constante.
-- \(R_x(t_1,t_2)\): autocorrelación general.
-- \(R_x(\tau)\): autocorrelación para proceso WSS.
-- \(T\): duración de observación.
-- \(^*\): conjugado complejo.
+## 2.5 Ergodicidad
 
-### 4. ¿Por qué se hace esto?
+Un proceso es **ergódico** si sus estadísticas de ensamble pueden obtenerse a partir de una sola realización suficientemente larga.
 
-La estacionariedad simplifica el análisis. Si la autocorrelación dependiera de \(t_1\) y \(t_2\) por separado, estudiar el proceso sería mucho más difícil. Cuando depende solo de \(\tau\), se puede hablar de memoria temporal, potencia y PSD de forma directa.
+La ergodicidad no es solo una comodidad matemática. Es la razón por la que podemos medir una señal durante un tiempo largo y estimar su media, autocorrelación o PSD como si representara al proceso completo.
 
-La ergodicidad permite reemplazar promedios de ensamble por promedios temporales. Eso justifica estimar media, autocorrelación y PSD usando una única señal medida.
+## 2.6 Relación entre estacionariedad y ergodicidad
 
-### 5. Interpretación física
+Todo proceso ergódico debe ser estacionario en la estadística que se está estimando. Si una sola realización larga representa al ensamble, entonces la estadística no puede depender del punto de inicio temporal.
 
-Un proceso WSS tiene comportamiento estadístico estable: su nivel promedio y su estructura de correlación no cambian con el tiempo. Por ejemplo, ruido térmico ideal en régimen permanente suele modelarse como WSS.
+Pero no todo proceso estacionario es ergódico.
 
-Un proceso ergódico es más fuerte: una realización larga contiene suficiente información estadística del proceso completo.
+Un ejemplo clásico es:
 
-WSS no significa necesariamente ergódico. Ejemplo conceptual: si cada realización es una constante aleatoria \(X(t)=A\), con \(A\) distinto para cada realización, el proceso puede ser estacionario porque nada cambia con el tiempo, pero una sola realización solo revela un valor de \(A\), no toda la distribución del ensamble.
+$$
+x(t)=A
+$$
 
-Todo proceso ergódico debe ser estacionario en la estadística considerada, porque si el promedio temporal representa al ensamble, esas estadísticas no pueden depender del origen temporal. Pero no todo proceso estacionario es ergódico.
+donde \(A\) es una variable aleatoria constante en el tiempo. Cada realización es una línea horizontal. El proceso es estacionario porque no cambia con el tiempo, pero una sola realización solo muestra un valor de \(A\). No permite conocer toda la distribución de \(A\). Por eso no es ergódico.
 
-### 6. Recuadro importante
+## 2.7 Cuándo puedo usar una sola realización
+
+Puedes usar una sola realización para estimar estadísticas cuando el proceso puede asumirse ergódico. En la práctica, esto se asume si:
+
+- El proceso está en régimen permanente.
+- Las estadísticas no parecen cambiar con el tiempo.
+- La observación es suficientemente larga.
+- El sistema físico que genera la señal no cambia durante la medición.
 
 > [!IMPORTANT]
-> WSS significa media constante y autocorrelación dependiente solo de \(\tau\). Ergodicidad significa que puedo estimar estadísticas del ensamble usando una sola realización larga.
-> Memoriza: las dos condiciones WSS y la diferencia entre promedio temporal y promedio de ensamble.
-> Debes saber demostrar: si un proceso es WSS calculando media y autocorrelación.
-
-> [!NOTE]
-> En mediciones reales, casi siempre asumimos ergodicidad para justificar que una captura temporal representa al proceso.
+> WSS significa estabilidad de media y autocorrelación. Ergodicidad significa que una realización larga puede reemplazar al ensamble.
 
 > [!WARNING]
-> Que un proceso sea estacionario no garantiza que una sola realización baste para estimar sus estadísticas.
+> WSS no garantiza ergodicidad. Estacionario no significa automáticamente "estimable con una sola medición".
 
-> [!TIP]
-> Para probar WSS, revisa en orden: media constante y autocorrelación dependiente solo del retardo.
+> [!NOTE]
+> En datos medidos, la ergodicidad es la hipótesis que permite pasar de teoría estadística a estimación práctica.
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
-1. Determine si un proceso dado es WSS.
+1. Determine si un proceso es WSS calculando media y autocorrelación.
 2. Explique por qué WSS no implica ergodicidad.
-3. Explique cuándo se puede usar una sola realización para estimar la media.
-4. Dé un ejemplo de proceso estacionario no ergódico.
+3. Explique por qué un proceso ergódico debe ser estacionario.
+4. Diga cuándo es válido estimar \(R_x(\tau)\) con una sola realización.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Decir que estacionario significa que la señal no cambia en el tiempo.
-2. Confundir promedio temporal con promedio de ensamble.
-3. Suponer que WSS y ergodicidad son equivalentes.
-4. Usar fórmulas de PSD para procesos no WSS sin justificarlo.
+Sea:
 
-### 9. Mini-ejemplo
+$$
+x(t)=A\cos(\omega_0t+\phi)
+$$
 
-Sea \(x(t)=A\cos(\omega_0t+\phi)\), con \(\phi\) uniforme en \([0,2\pi)\).
-
-Media:
+con \(\phi\) uniforme en \([0,2\pi)\). La media es:
 
 $$
 E\{x(t)\}=0
 $$
 
-Autocorrelación:
+La autocorrelación resulta:
 
 $$
 R_x(t_1,t_2)=\frac{A^2}{2}\cos(\omega_0(t_2-t_1))
 $$
 
-Como depende solo de \(\tau\), el proceso es WSS.
-
-Ejercicios guía:
-
-1. Revise si \(x(t)=A\cos(\omega_0t)\) con \(A\) aleatoria es WSS.
-2. Explique qué falla si la media depende de \(t\).
-3. Compare \(E\{x(t)\}\) con \(\frac{1}{T}\int_0^T x(t)dt\).
+Como depende solo de \(t_2-t_1\), el proceso es WSS.
 
 ---
 
-## 3. Autocorrelación, covarianza y correlación cruzada
+# 3. Autocorrelación, covarianza y correlación cruzada
 
-### 1. Idea principal
+## 3.1 La idea de memoria temporal
 
-La **autocorrelación** mide qué tanto se parece una señal a una versión retardada de sí misma. Sirve para medir memoria temporal, periodicidad, potencia y estructura interna de un proceso aleatorio.
+Una señal aleatoria no solo se caracteriza por su amplitud promedio o su potencia. También importa si sus valores en instantes cercanos se parecen.
 
-La **covarianza** mide la correlación después de quitar la media. Por eso representa la relación entre las partes fluctuantes.
+La **autocorrelación** mide esa semejanza. Si \(x(t)\) y \(x(t+\tau)\) son parecidos, la autocorrelación para ese retardo será grande. Si no guardan relación, será pequeña.
 
-La **correlación cruzada** mide qué tanto se parecen dos señales diferentes cuando una se desplaza respecto a la otra.
+Por eso se dice que la autocorrelación mide la **memoria** de la señal.
 
-### 2. Fórmulas principales
+## 3.2 Definición general de autocorrelación
 
-Autocorrelación general:
+Para un proceso complejo:
 
 $$
 R_x(t_1,t_2)=E\{x(t_1)x^*(t_2)\}
 $$
 
-Autocorrelación WSS:
+Se multiplica el valor de la señal en \(t_1\) por el conjugado del valor en \(t_2\), y luego se promedia. El conjugado aparece para que la potencia de señales complejas quede positiva:
+
+$$
+x(t)x^*(t)=|x(t)|^2
+$$
+
+Para procesos WSS:
 
 $$
 R_x(\tau)=E\{x(t)x^*(t+\tau)\}
 $$
 
-Covarianza:
+## 3.3 Por qué \(R_x(0)\) es potencia
+
+Si el retardo es cero:
 
 $$
-K_x(\tau)=E\{(x(t)-\mu_x)(x^*(t+\tau)-\mu_x^*)\}
+R_x(0)=E\{x(t)x^*(t)\}
 $$
 
-Relación entre covarianza y autocorrelación:
+Como:
 
 $$
-K_x(\tau)=R_x(\tau)-|\mu_x|^2
+x(t)x^*(t)=|x(t)|^2
 $$
 
-Correlación cruzada:
-
-$$
-R_{xy}(\tau)=E\{x(t)y^*(t+\tau)\}
-$$
-
-Potencia:
+entonces:
 
 $$
 R_x(0)=E\{|x(t)|^2\}=P_x
 $$
 
-Varianza:
+Esta es una de las conexiones más importantes del curso: la autocorrelación en el origen es la potencia promedio.
+
+## 3.4 Covarianza
+
+La autocorrelación incluye la componente DC. Si queremos estudiar solo las fluctuaciones, restamos la media:
+
+$$
+K_x(\tau)=E\{(x(t)-\mu_x)(x^*(t+\tau)-\mu_x^*)\}
+$$
+
+Al desarrollar:
+
+$$
+K_x(\tau)=R_x(\tau)-|\mu_x|^2
+$$
+
+En \(\tau=0\):
 
 $$
 K_x(0)=\sigma_x^2
 $$
 
-Máximo en cero:
+Entonces, autocorrelación en cero da potencia total; covarianza en cero da varianza.
+
+## 3.5 Correlación cruzada
+
+La correlación cruzada compara dos procesos:
+
+$$
+R_{xy}(\tau)=E\{x(t)y^*(t+\tau)\}
+$$
+
+Sirve para detectar retardos, sincronización, similitud entre entrada y salida, o presencia de una señal conocida dentro de otra.
+
+Si \(R_{xy}(\tau)\) tiene un máximo en cierto retardo, eso sugiere que una señal se parece a la otra desplazada ese tiempo.
+
+## 3.6 Propiedades de la autocorrelación
+
+La autocorrelación cumple:
 
 $$
 |R_x(\tau)|\leq R_x(0)
 $$
 
-Simetría conjugada:
+La mayor semejanza ocurre cuando la señal se compara consigo misma sin retardo.
+
+También cumple simetría conjugada:
 
 $$
 R_x(\tau)=R_x^*(-\tau)
@@ -386,7 +500,11 @@ $$
 R_x(\tau)=R_x(-\tau)
 $$
 
-Diferencia cuadrática media:
+Por eso la ACF de una señal real WSS debe ser una función par.
+
+## 3.7 Diferencia cuadrática media
+
+Otra forma de medir cuánto cambia la señal al pasar un retardo es:
 
 $$
 \varepsilon_x(\tau)=E\{(x(t)-x(t+\tau))^2\}
@@ -398,7 +516,17 @@ $$
 \varepsilon_x(\tau)=2R_x(0)-2R_x(\tau)
 $$
 
-Intervalo de correlación:
+Esta expresión sale al expandir el cuadrado:
+
+$$
+(x(t)-x(t+\tau))^2=x^2(t)+x^2(t+\tau)-2x(t)x(t+\tau)
+$$
+
+Como el proceso es WSS, \(E\{x^2(t)\}=E\{x^2(t+\tau)\}=R_x(0)\), y el término cruzado es \(R_x(\tau)\).
+
+## 3.8 Intervalo y tiempo efectivo de correlación
+
+El intervalo de correlación define a partir de qué retardo la señal se considera casi no correlacionada:
 
 $$
 \frac{R_x(\tau_c)}{\sigma_x^2}=\beta
@@ -410,7 +538,7 @@ $$
 \beta \approx 0.05 \text{ a } 0.1
 $$
 
-Tiempo efectivo de correlación:
+El tiempo efectivo de correlación resume el ancho de la autocorrelación:
 
 $$
 \Delta \tau_e=
@@ -418,7 +546,9 @@ $$
 \int_0^\infty R_x(\tau)\,d\tau
 $$
 
-Ejemplos típicos:
+Si este valor es grande, la señal tiene memoria larga. Si es pequeño, la señal cambia rápidamente.
+
+## 3.9 Ejemplos típicos
 
 Ruido blanco:
 
@@ -426,15 +556,21 @@ $$
 R_n(\tau)=\frac{N_0}{2}\delta(\tau)
 $$
 
+Esto significa que solo hay correlación en el mismo instante. Para retardos distintos de cero, el ruido no tiene memoria.
+
 Seno con fase aleatoria:
 
 $$
 x(t)=a\cos(\omega_0t+\phi)
 $$
 
+con \(\phi\) uniforme. Su autocorrelación es:
+
 $$
 R_x(\tau)=\frac{a^2}{2}\cos(\omega_0\tau)
 $$
+
+La ACF es periódica porque la señal contiene una oscilación periódica.
 
 ACF exponencial:
 
@@ -442,111 +578,65 @@ $$
 R_x(\tau)=\sigma_x^2e^{-\alpha|\tau|}
 $$
 
-### 3. Significado de las variables
-
-- \(R_x(\tau)\): autocorrelación del proceso \(x(t)\).
-- \(R_{xy}(\tau)\): correlación cruzada entre \(x(t)\) y \(y(t)\).
-- \(K_x(\tau)\): covarianza.
-- \(\mu_x\): media del proceso.
-- \(\sigma_x^2\): varianza.
-- \(\tau\): retardo.
-- \(\tau_c\): intervalo de correlación.
-- \(\Delta\tau_e\): tiempo efectivo de correlación.
-- \(\beta\): umbral pequeño para decidir cuándo la correlación es despreciable.
-- \(\delta(\tau)\): delta de Dirac.
-- \(N_0/2\): nivel de PSD bilateral del ruido blanco.
-
-### 4. ¿Por qué se hace esto?
-
-La autocorrelación se usa porque no solo importa cuánta potencia tiene una señal, sino cómo está organizada en el tiempo. Dos señales pueden tener la misma potencia pero memorias temporales distintas.
-
-Si \(R_x(\tau)\) decae rápido, valores separados en el tiempo se vuelven casi independientes rápidamente. Si \(R_x(\tau)\) decae lento, la señal conserva memoria. Si \(R_x(\tau)\) es periódica, la señal contiene estructura periódica.
-
-La covarianza se usa cuando interesa quitar la componente DC y estudiar solo las fluctuaciones.
-
-### 5. Interpretación física
-
-Que una señal tenga **memoria** significa que conocer \(x(t)\) ayuda a predecir \(x(t+\tau)\). La memoria se mide con \(R_x(\tau)\).
-
-Si la autocorrelación decae rápido, la señal cambia de forma brusca o irregular; esto suele asociarse con contenido espectral ancho.
-
-Si la autocorrelación es periódica, la señal repite patrones; esto suele asociarse con líneas espectrales o componentes sinusoidales.
-
-\(R_x(0)\) representa potencia porque en \(\tau=0\):
-
-$$
-R_x(0)=E\{x(t)x^*(t)\}=E\{|x(t)|^2\}
-$$
-
-Para la ACF exponencial, si \(\alpha\) aumenta, \(e^{-\alpha|\tau|}\) decae más rápido. Eso significa menor tiempo de correlación y menor memoria temporal.
-
-### 6. Recuadro importante
+Si \(\alpha\) aumenta, la exponencial decae más rápido. Eso significa menor memoria temporal y mayor dispersión espectral.
 
 > [!IMPORTANT]
-> La autocorrelación en \(\tau=0\) da la potencia total. La covarianza en \(\tau=0\) da la varianza.
-> Memoriza: \(R_x(0)=P_x\), \(K_x(0)=\sigma_x^2\), simetría y máximo en cero.
-> Debes saber demostrar: la ACF del seno con fase aleatoria y la relación de diferencia cuadrática media.
-
-> [!NOTE]
-> Autocorrelación ancha significa señal con memoria larga. Autocorrelación angosta significa señal menos predecible en el tiempo.
+> La autocorrelación mide memoria. \(R_x(0)\) es potencia. \(K_x(0)\) es varianza.
 
 > [!WARNING]
-> No confundas autocorrelación con covarianza: la autocorrelación incluye la media; la covarianza no.
+> Si la señal es compleja, no olvides el conjugado.
 
 > [!TIP]
-> Si la señal es real y WSS, \(R_x(\tau)\) debe ser par. Si obtienes una ACF no par, revisa el cálculo.
+> Si una ACF real no es par, probablemente hay un error de cálculo.
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
-1. Calcule \(R_x(\tau)\) para una señal senoidal con fase aleatoria.
-2. Demuestre que \(R_x(0)=P_x\).
-3. Explique la diferencia entre autocorrelación y covarianza.
-4. Interprete una ACF exponencial cuando \(\alpha\) aumenta.
+1. Explique por qué \(R_x(0)=P_x\).
+2. Diferencie autocorrelación y covarianza.
+3. Calcule la diferencia cuadrática media usando \(R_x(\tau)\).
+4. Interprete una ACF periódica, una ACF angosta y una ACF exponencial.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Pensar que \(R_x(\tau)\) siempre tiende a cero; si hay media no nula puede tender a \(|\mu_x|^2\).
-2. Olvidar el conjugado en señales complejas.
-3. Confundir el retardo \(\tau\) con el tiempo absoluto \(t\).
-4. Usar \(K_x(\tau)=R_x(\tau)\) aunque la media no sea cero.
-
-### 9. Mini-ejemplo
-
-Para \(R_x(\tau)=\sigma_x^2e^{-\alpha|\tau|}\):
-
-Potencia:
+Para:
 
 $$
-R_x(0)=\sigma_x^2
+R_x(\tau)=\sigma_x^2e^{-\alpha|\tau|}
 $$
 
-Tiempo efectivo:
+la potencia es:
 
 $$
-\Delta\tau_e=\frac{1}{\sigma_x^2}\int_0^\infty \sigma_x^2e^{-\alpha\tau}d\tau=\frac{1}{\alpha}
+P_x=R_x(0)=\sigma_x^2
 $$
 
-Interpretación: si \(\alpha\) se duplica, el tiempo de correlación se reduce a la mitad.
+y el tiempo efectivo es:
 
-Ejercicios guía:
+$$
+\Delta\tau_e=
+\frac{1}{\sigma_x^2}
+\int_0^\infty \sigma_x^2e^{-\alpha\tau}\,d\tau
+=
+\frac{1}{\alpha}
+$$
 
-1. Calcule \(\varepsilon_x(\tau)\) para la ACF exponencial.
-2. Determine \(K_x(\tau)\) si \(R_x(\tau)=4e^{-2|\tau|}+9\) y \(\mu_x=3\).
-3. Explique si un ruido blanco tiene memoria temporal.
+Por eso \(\alpha\) controla directamente qué tan rápido se pierde la memoria.
 
 ---
 
-## 4. PSD, espectro estadístico y teorema de Wiener-Khinchine
+# 4. PSD, espectro estadístico y teorema de Wiener-Khinchine
 
-### 1. Idea principal
+## 4.1 Por qué necesitamos un espectro estadístico
 
-La **densidad espectral de potencia**, o **PSD**, indica cómo se reparte la potencia de una señal aleatoria en frecuencia. Si una señal tiene mucha potencia alrededor de cierta frecuencia, la PSD toma valores altos allí.
+Para señales deterministas se usa la transformada de Fourier para saber qué frecuencias contiene la señal. En procesos aleatorios, una realización aislada puede cambiar, así que no se describe la señal exacta sino cómo se distribuye su potencia en frecuencia.
 
-Para procesos WSS, la autocorrelación y la PSD forman un par de Fourier. Esta relación se llama **teorema de Wiener-Khinchine**. Permite pasar del análisis temporal estadístico \(R_x(\tau)\) al análisis frecuencial estadístico \(S_x(\omega)\).
+La **densidad espectral de potencia** o **PSD** indica cuánta potencia hay por unidad de frecuencia angular.
 
-### 2. Fórmulas principales
+Si \(S_x(\omega)\) es grande cerca de una frecuencia, el proceso tiene mucha potencia alrededor de esa frecuencia.
 
-Definición de PSD:
+## 4.2 Definición de PSD
+
+La definición formal usa una observación truncada \(X_T(\omega)\):
 
 $$
 S_x(\omega)=
@@ -554,7 +644,11 @@ S_x(\omega)=
 \frac{E\{|X_T(\omega)|^2\}}{2T}
 $$
 
-Potencia total:
+La magnitud cuadrada aparece porque estamos midiendo potencia. El promedio estadístico aparece porque el proceso es aleatorio. La división por \(2T\) convierte energía observada en potencia promedio.
+
+## 4.3 Potencia total como área bajo la PSD
+
+Como la PSD es potencia por frecuencia, la potencia total se obtiene integrando:
 
 $$
 P_x=R_x(0)=
@@ -562,21 +656,7 @@ P_x=R_x(0)=
 \int_{-\infty}^{\infty}S_x(\omega)\,d\omega
 $$
 
-Propiedades:
-
-$$
-S_x(\omega)\in \mathbb{R}
-$$
-
-$$
-S_x(\omega)\geq 0
-$$
-
-Para procesos reales:
-
-$$
-S_x(\omega)=S_x(-\omega)
-$$
+El factor \(1/(2\pi)\) aparece porque se está usando frecuencia angular \(\omega\), no frecuencia en Hz.
 
 Si la media es cero:
 
@@ -586,7 +666,39 @@ $$
 \int_{-\infty}^{\infty}S_x(\omega)\,d\omega
 $$
 
-Teorema de Wiener-Khinchine:
+Esto ocurre porque con media cero la potencia coincide con la varianza.
+
+## 4.4 Propiedades de la PSD
+
+La PSD es real:
+
+$$
+S_x(\omega)\in \mathbb{R}
+$$
+
+No puede ser negativa:
+
+$$
+S_x(\omega)\geq 0
+$$
+
+La razón física es que representa densidad de potencia. La razón matemática es que viene de un promedio de magnitudes cuadradas:
+
+$$
+E\{|X_T(\omega)|^2\}\geq0
+$$
+
+Para procesos reales:
+
+$$
+S_x(\omega)=S_x(-\omega)
+$$
+
+El espectro es par porque las frecuencias positivas y negativas son conjugadas en señales reales.
+
+## 4.5 Teorema de Wiener-Khinchine
+
+Para procesos WSS, la autocorrelación y la PSD forman un par de Fourier:
 
 $$
 S_x(\omega)=\mathcal{F}\{R_x(\tau)\}
@@ -596,7 +708,7 @@ $$
 R_x(\tau)=\mathcal{F}^{-1}\{S_x(\omega)\}
 $$
 
-Forma integral:
+En forma integral:
 
 $$
 S_x(\omega)=
@@ -611,12 +723,18 @@ R_x(\tau)=
 S_x(\omega)e^{j\omega\tau}\,d\omega
 $$
 
-Para funciones pares:
+Este teorema es profundo: dice que la forma en que una señal se parece a sí misma en el tiempo determina cómo está repartida su potencia en frecuencia.
+
+## 4.6 Forma con coseno
+
+Si \(R_x(\tau)\) es real y par:
 
 $$
 S_x(\omega)=
 2\int_0^\infty R_x(\tau)\cos(\omega\tau)\,d\tau
 $$
+
+Y si \(S_x(\omega)\) es real y par:
 
 $$
 R_x(\tau)=
@@ -624,7 +742,9 @@ R_x(\tau)=
 \int_0^\infty S_x(\omega)\cos(\omega\tau)\,d\omega
 $$
 
-Pares ACF-PSD frecuentes:
+Se usa coseno porque la parte seno se cancela por simetría impar.
+
+## 4.7 Pares ACF-PSD frecuentes
 
 ACF exponencial:
 
@@ -632,10 +752,14 @@ $$
 R_x(\tau)=\sigma_x^2e^{-\alpha|\tau|}
 $$
 
+PSD:
+
 $$
 S_x(\omega)=
 \frac{2\sigma_x^2\alpha}{\alpha^2+\omega^2}
 $$
+
+Cuando \(\alpha\) aumenta, la ACF se angosta y la PSD se ensancha.
 
 Ruido blanco:
 
@@ -652,10 +776,12 @@ PSD rectangular:
 $$
 S_n(\omega)=
 \begin{cases}
-\frac{N_0}{2}, & |\omega|<B\\
+\dfrac{N_0}{2}, & |\omega|<B\\
 0, & \text{otro caso}
 \end{cases}
 $$
+
+ACF correspondiente:
 
 $$
 R_n(\tau)=
@@ -666,6 +792,12 @@ R_n(\tau)=
 \right)
 $$
 
+Aquí se usa:
+
+$$
+\operatorname{sinc}(u)=\frac{\sin(\pi u)}{\pi u}
+$$
+
 Seno con fase aleatoria:
 
 $$
@@ -673,78 +805,43 @@ R_x(\tau)=
 \frac{a^2}{2}\cos(\omega_0\tau)
 $$
 
+PSD:
+
 $$
 S_x(\omega)=
 \frac{\pi a^2}{2}
-[
+\left[
 \delta(\omega-\omega_0)+\delta(\omega+\omega_0)
-]
+\right]
 $$
 
-### 3. Significado de las variables
+Las deltas indican potencia concentrada exactamente en \(\pm\omega_0\).
 
-- \(S_x(\omega)\): densidad espectral de potencia.
-- \(X_T(\omega)\): transformada de Fourier de una observación truncada de duración \(2T\).
-- \(\omega\): frecuencia angular en rad/s.
-- \(P_x\): potencia promedio total.
-- \(R_x(\tau)\): autocorrelación.
-- \(B\): frecuencia angular de corte en la PSD rectangular.
-- \(\alpha\): parámetro de decaimiento de la ACF exponencial.
-- \(\operatorname{sinc}(u)\): función sinc normalizada, \(\operatorname{sinc}(u)=\frac{\sin(\pi u)}{\pi u}\).
+## 4.8 Ancho temporal contra ancho espectral
 
-### 4. ¿Por qué se hace esto?
+Una autocorrelación angosta implica que la señal pierde memoria rápidamente. Eso requiere muchas frecuencias para describir cambios rápidos. Por eso el espectro es ancho.
 
-La PSD se usa porque muchas operaciones de señales son más claras en frecuencia. Por ejemplo, un filtro elimina o atenúa bandas de frecuencia; la PSD permite ver cuánta potencia se pierde o se conserva.
+Una autocorrelación ancha implica que la señal cambia lentamente y conserva memoria. Entonces la potencia se concentra en un rango más estrecho de frecuencias.
 
-Wiener-Khinchine se usa porque la autocorrelación contiene información de potencia y memoria temporal, mientras que la PSD contiene la misma información organizada por frecuencia.
-
-La PSD no puede ser negativa porque viene de un promedio de magnitudes cuadradas:
-
-$$
-E\{|X_T(\omega)|^2\}\geq 0
-$$
-
-La PSD se integra para obtener potencia porque es una densidad: cada intervalo de frecuencia aporta una parte de la potencia total.
-
-### 5. Interpretación física
-
-Una autocorrelación angosta implica un espectro ancho. Si la señal pierde memoria muy rápido, cambia bruscamente en el tiempo y necesita muchas frecuencias para describirse.
-
-Una autocorrelación ancha implica un espectro angosto. Si la señal cambia lentamente y conserva memoria, su potencia se concentra en frecuencias bajas o en pocas frecuencias.
-
-El ruido blanco ideal tiene PSD plana: todas las frecuencias tienen la misma densidad de potencia. Por eso su autocorrelación es una delta: no hay memoria entre instantes distintos.
-
-### 6. Recuadro importante
+Esta idea es una manifestación estadística de la relación tiempo-frecuencia de Fourier.
 
 > [!IMPORTANT]
-> Para procesos WSS: autocorrelación y PSD son par de Fourier. Además, el área bajo \(S_x(\omega)\), dividida por \(2\pi\), es la potencia total.
-> Memoriza: Wiener-Khinchine, propiedades de la PSD y pares ACF-PSD frecuentes.
-> Debes saber demostrar: PSD de la ACF exponencial y ACF de la PSD rectangular.
-
-> [!NOTE]
-> Una línea delta en PSD representa potencia concentrada en una frecuencia exacta, como una sinusoide ideal.
+> Para procesos WSS, \(S_x(\omega)\) es la transformada de Fourier de \(R_x(\tau)\). La potencia total es el área bajo la PSD dividida por \(2\pi\).
 
 > [!WARNING]
-> La PSD no es la transformada de Fourier de la señal aleatoria directamente; es la transformada de Fourier de la autocorrelación.
+> La PSD no es amplitud espectral. Es potencia por unidad de frecuencia.
 
 > [!TIP]
-> Si \(R_x(\tau)\) es par, usa las integrales con coseno para ahorrar trabajo.
+> Si ves una ACF muy estrecha, espera una PSD ancha. Si ves una ACF ancha, espera una PSD estrecha.
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
 1. Obtenga la PSD de una ACF exponencial.
 2. Obtenga la ACF de una PSD rectangular.
-3. Explique por qué una PSD debe ser real y no negativa.
-4. Interprete físicamente una PSD con deltas en \(\pm\omega_0\).
+3. Explique por qué la PSD no puede ser negativa.
+4. Explique la relación entre ancho de autocorrelación y ancho de espectro.
 
-### 8. Errores comunes
-
-1. Olvidar el factor \(1/(2\pi)\) en la transformada inversa.
-2. Confundir frecuencia angular \(\omega\) con frecuencia en Hz \(f\).
-3. Interpretar la PSD como amplitud en vez de potencia por frecuencia.
-4. Pensar que una PSD plana ideal tiene potencia finita en ancho de banda infinito.
-
-### 9. Mini-ejemplo
+## Mini-ejemplo
 
 Dada:
 
@@ -755,38 +852,42 @@ $$
 Como es par:
 
 $$
-S_x(\omega)=2\int_0^\infty \sigma_x^2e^{-\alpha\tau}\cos(\omega\tau)d\tau
+S_x(\omega)=
+2\int_0^\infty \sigma_x^2e^{-\alpha\tau}\cos(\omega\tau)\,d\tau
 $$
 
 Usando:
 
 $$
-\int_0^\infty e^{-\alpha\tau}\cos(\omega\tau)d\tau=\frac{\alpha}{\alpha^2+\omega^2}
+\int_0^\infty e^{-\alpha\tau}\cos(\omega\tau)\,d\tau
+=
+\frac{\alpha}{\alpha^2+\omega^2}
 $$
 
-Entonces:
+queda:
 
 $$
-S_x(\omega)=\frac{2\sigma_x^2\alpha}{\alpha^2+\omega^2}
+S_x(\omega)=
+\frac{2\sigma_x^2\alpha}{\alpha^2+\omega^2}
 $$
-
-Ejercicios guía:
-
-1. Integre esta PSD y verifique que \(P_x=\sigma_x^2\).
-2. Explique qué pasa con el espectro si \(\alpha\) aumenta.
-3. Dibuje cualitativamente la PSD de una sinusoide aleatoria.
 
 ---
 
-## 5. Estimadores de ACF y PSD
+# 5. Estimadores de ACF y PSD
 
-### 1. Idea principal
+## 5.1 Por qué estimar no es lo mismo que calcular la teoría
 
-Las funciones teóricas \(R_x(\tau)\) y \(S_x(\omega)\) suponen promedios infinitos o ensambles ideales. En la práctica solo tenemos una secuencia finita de datos. Por eso usamos **estimadores**.
+Las fórmulas teóricas usan esperanzas, límites infinitos o autocorrelaciones exactas. En un experimento real tenemos una secuencia finita:
 
-La **autocorrelación muestral** aproxima la ACF usando muestras. El **periodograma** aproxima la PSD usando la magnitud cuadrada de la transformada discreta. El **método de Welch** mejora el periodograma dividiendo la señal en segmentos, aplicando ventanas y promediando.
+$$
+x[0],x[1],\dots,x[N-1]
+$$
 
-### 2. Fórmulas principales
+Por eso usamos estimadores. Un estimador es una fórmula que intenta aproximar una cantidad teórica usando datos disponibles.
+
+## 5.2 Autocorrelación muestral
+
+Para retardo discreto \(k\), comparamos \(x[n]\) con \(x[n+k]\). Como la secuencia tiene longitud finita, para retardos grandes hay menos pares disponibles.
 
 Estimador sesgado:
 
@@ -808,7 +909,19 @@ $$
 x[n]x^*[n+k]
 $$
 
-Transformada discreta:
+El estimador sesgado divide siempre por \(N\). El no sesgado divide por el número real de productos disponibles, \(N-k\).
+
+## 5.3 Sesgo contra varianza
+
+El estimador no sesgado corrige el promedio esperado, pero en retardos grandes usa pocos datos y puede fluctuar mucho.
+
+El estimador sesgado tiende a subestimar la autocorrelación en retardos grandes, pero suele ser más estable.
+
+En análisis práctico no siempre se escoge el no sesgado. Depende de si importa más corregir el promedio o reducir variabilidad.
+
+## 5.4 Periodograma
+
+La transformada discreta de una secuencia finita es:
 
 $$
 X_N(e^{j\omega})=
@@ -816,7 +929,7 @@ X_N(e^{j\omega})=
 x[n]e^{-j\omega n}
 $$
 
-Periodograma:
+El periodograma estima la PSD como magnitud cuadrada:
 
 $$
 \hat{S}_x(e^{j\omega})
@@ -825,124 +938,117 @@ $$
 |X_N(e^{j\omega})|^2
 $$
 
-Resolución espectral aproximada:
+La FFT no cambia la teoría; solo calcula eficientemente muestras de esta transformada.
+
+## 5.5 Por qué el periodograma tiene alta varianza
+
+El periodograma se calcula a partir de una única observación finita. Para procesos aleatorios, la energía espectral estimada fluctúa mucho de una realización a otra. Aumentar \(N\) mejora la resolución en frecuencia, pero el periodograma puede seguir viéndose irregular.
+
+La resolución aproximada es:
 
 $$
-\Delta f \approx \frac{f_s}{N}
+\Delta f\approx\frac{f_s}{N}
 $$
 
-### 3. Significado de las variables
+Más muestras permiten distinguir frecuencias más cercanas. Pero resolución y varianza no son lo mismo.
 
-- \(x[n]\): secuencia medida.
-- \(N\): número de muestras.
-- \(k\): retardo discreto.
-- \(\hat{R}_x[k]\): estimación de autocorrelación.
-- \(X_N(e^{j\omega})\): transformada de la secuencia finita.
-- \(\hat{S}_x(e^{j\omega})\): PSD estimada.
-- \(f_s\): frecuencia de muestreo.
-- \(\Delta f\): separación entre bins de frecuencia.
+## 5.6 Ventanas y longitud finita
 
-### 4. ¿Por qué se hace esto?
+Cuando se toma una señal finita, en realidad se multiplica por una ventana temporal. Multiplicar en tiempo equivale a convolucionar en frecuencia. Por eso aparecen fugas espectrales.
 
-El estimador sesgado divide por \(N\) para todos los retardos. Esto produce menor varianza y suele dar matrices de autocorrelación mejor comportadas.
+Una ventana rectangular tiene buena resolución pero más fuga. Ventanas como Hann o Hamming reducen fuga, pero ensanchan el lóbulo principal. Eso puede hacer que picos cercanos se mezclen.
 
-El estimador no sesgado divide por \(N-k\), porque para retardos grandes hay menos productos disponibles. Corrige el promedio, pero su varianza aumenta en retardos grandes.
+## 5.7 Método de Welch
 
-El periodograma usa la idea de que la potencia en frecuencia está relacionada con \(|X_N|^2\). Sin embargo, tiene alta varianza: aunque aumente \(N\), el periodograma individual sigue siendo muy irregular.
+Welch reduce la varianza así:
 
-Welch reduce la varianza al promediar varios periodogramas de segmentos. Se pierde algo de resolución, pero se gana estabilidad.
+1. Divide la señal en segmentos.
+2. Aplica una ventana a cada segmento.
+3. Calcula el periodograma de cada segmento.
+4. Promedia los periodogramas.
 
-### 5. Interpretación física
+Al promediar, las fluctuaciones aleatorias se suavizan. Se gana estabilidad, pero se pierde resolución porque cada segmento es más corto que la señal completa.
 
-Las estimaciones no son iguales a las funciones teóricas por varias razones:
+## 5.8 Comparación entre teoría y experimento
 
-- La señal medida tiene longitud finita.
-- Puede haber ruido adicional.
-- La ventana modifica el espectro.
-- El muestreo limita la resolución.
-- El periodograma tiene alta varianza.
+La PSD teórica puede ser lisa, exacta y simétrica. La PSD estimada puede mostrar irregularidades, picos ensanchados, piso de ruido, errores por ventana y fluctuaciones de varianza.
 
-Aumentar \(N\) mejora la resolución espectral y permite estimar retardos más largos, pero no elimina por completo la variabilidad del periodograma.
-
-Las ventanas reducen fuga espectral, pero ensanchan los lóbulos principales. Por eso mejoran la lectura de picos cercanos a componentes fuertes, a costa de resolución.
-
-Un pico espectral indica potencia concentrada cerca de una frecuencia. Un piso espectral indica ruido distribuido en muchas frecuencias.
-
-### 6. Recuadro importante
+Un pico espectral suele indicar una componente sinusoidal o una banda de potencia concentrada. Un piso espectral indica ruido distribuido. Si se agrega ruido blanco, se eleva el piso de la PSD.
 
 > [!IMPORTANT]
-> El periodograma es fácil de calcular con FFT, pero tiene alta varianza. Welch reduce la varianza promediando segmentos.
-> Memoriza: estimador sesgado, estimador no sesgado, periodograma y pasos de Welch.
-> Debes saber explicar: por qué una estimación finita no coincide exactamente con la función teórica.
-
-> [!NOTE]
-> Más muestras dan mejor resolución en frecuencia, pero no garantizan una PSD perfectamente suave.
+> Estimar una PSD no es obtener la PSD teórica exacta. Los datos finitos introducen varianza, fuga espectral y resolución limitada.
 
 > [!WARNING]
-> No compares una PSD teórica ideal con una estimada esperando igualdad exacta punto a punto.
+> El periodograma no se vuelve perfectamente suave solo por aumentar \(N\).
 
 > [!TIP]
-> En parcial, si preguntan por Welch: segmentar, ventanear, calcular periodogramas y promediar.
+> Si quieres menos varianza en la PSD estimada, usa Welch. Si quieres más resolución, necesitas segmentos más largos o más muestras.
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
-1. Compare el estimador sesgado y el no sesgado de autocorrelación.
+1. Compare estimador sesgado y no sesgado de ACF.
 2. Explique por qué el periodograma tiene alta varianza.
-3. Explique cómo Welch reduce la varianza de la PSD estimada.
-4. Analice el efecto de aumentar \(N\) sobre la resolución espectral.
+3. Explique cómo Welch reduce varianza.
+4. Interprete picos espectrales y piso de ruido.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Creer que el estimador no sesgado siempre es mejor.
-2. Olvidar que para retardos grandes hay menos productos disponibles.
-3. Confundir fuga espectral con ruido.
-4. Pensar que usar FFT cambia la definición matemática de la PSD; solo acelera el cálculo.
-
-### 9. Mini-ejemplo
-
-Si se tienen \(N=1000\) muestras y \(k=100\), el estimador no sesgado divide por \(900\), porque solo existen \(900\) productos \(x[n]x^*[n+100]\). El estimador sesgado divide por \(1000\), reduciendo el valor estimado en retardos grandes.
-
-Ejercicios guía:
-
-1. Calcule \(\hat{R}_x[1]\) para una secuencia corta real.
-2. Explique qué pasa con el periodograma si se agrega ruido blanco.
-3. Compare una ventana rectangular y una ventana Hann.
+Si \(N=1000\) y \(k=200\), solo hay \(800\) productos \(x[n]x^*[n+200]\). El estimador no sesgado divide por \(800\), mientras que el sesgado divide por \(1000\). El no sesgado corrige el promedio, pero como usa menos información puede fluctuar más.
 
 ---
 
-## 6. Ruido blanco, ruido gaussiano y ruido limitado en banda
+# 6. Ruido blanco, ruido gaussiano y ruido limitado en banda
 
-### 1. Idea principal
+## 6.1 Blanco y gaussiano no significan lo mismo
 
-El **ruido blanco** es un modelo de ruido cuya PSD es constante en todas las frecuencias. La palabra "blanco" se refiere al espectro, no a la distribución de amplitudes.
+"Blanco" describe el espectro. Un ruido es blanco si su PSD es constante. Eso significa que tiene la misma densidad de potencia en todas las frecuencias.
 
-El **ruido gaussiano** es un ruido cuyas amplitudes siguen una distribución normal. La palabra "gaussiano" se refiere a la estadística de amplitud, no al espectro.
+"Gaussiano" describe la distribución de amplitudes. Un ruido es gaussiano si sus valores instantáneos siguen una distribución normal.
 
-El **AWGN** es ruido blanco gaussiano aditivo: se suma a la señal, tiene PSD plana y sus amplitudes son gaussianas.
+Un ruido puede ser gaussiano sin ser blanco, y puede ser blanco sin tener distribución gaussiana. Cuando cumple ambas cosas y se suma a la señal, se llama AWGN.
 
-El ruido blanco ideal no es físicamente realizable porque tiene ancho de banda infinito y, por tanto, potencia infinita. En la práctica se usa ruido blanco limitado por el ancho de banda del sistema.
+## 6.2 Ruido blanco ideal
 
-### 2. Fórmulas principales
-
-Ruido blanco ideal:
+El modelo ideal tiene:
 
 $$
 S_n(\omega)=\frac{N_0}{2}, \quad -\infty<\omega<\infty
 $$
 
+Su autocorrelación es:
+
 $$
 R_n(\tau)=\frac{N_0}{2}\delta(\tau)
 $$
 
-Ruido limitado en banda:
+La delta significa que el ruido solo está correlacionado consigo mismo en el mismo instante. Para cualquier retardo distinto de cero, no hay memoria.
+
+## 6.3 Por qué el ruido blanco ideal no existe físicamente
+
+La potencia se obtiene integrando la PSD:
+
+$$
+P_n=
+\frac{1}{2\pi}
+\int_{-\infty}^{\infty}
+\frac{N_0}{2}\,d\omega
+$$
+
+Esa integral diverge porque el ancho de banda es infinito. Por tanto, el ruido blanco ideal tendría potencia infinita. Es útil como modelo local en la banda de interés, no como señal física completa.
+
+## 6.4 Ruido limitado en banda
+
+En un sistema real, el ancho de banda es finito:
 
 $$
 S_n(\omega)=
 \begin{cases}
-\frac{N_0}{2}, & |\omega|<\Delta\omega\\
+\dfrac{N_0}{2}, & |\omega|<\Delta\omega\\
 0, & |\omega|\geq \Delta\omega
 \end{cases}
 $$
+
+Su autocorrelación es:
 
 $$
 R_n(\tau)=
@@ -953,7 +1059,11 @@ R_n(\tau)=
 \right)
 $$
 
-Potencia de ruido:
+Limitar el espectro convierte la delta en una sinc. Eso significa que el ruido filtrado ya tiene cierta correlación temporal.
+
+## 6.5 Potencia de ruido
+
+La potencia es:
 
 $$
 P_n=R_n(0)=
@@ -962,18 +1072,35 @@ P_n=R_n(0)=
 \frac{N_0}{2}\,d\omega
 $$
 
+Como el intervalo tiene longitud \(2\Delta\omega\):
+
+$$
+P_n=
+\frac{1}{2\pi}
+\left(
+\frac{N_0}{2}
+\right)
+(2\Delta\omega)
+$$
+
+Entonces:
+
 $$
 P_n=
 \frac{N_0\Delta\omega}{2\pi}
 $$
 
-SNR lineal:
+Esta fórmula muestra que la potencia de ruido crece linealmente con el ancho de banda.
+
+## 6.6 SNR
+
+La relación señal a ruido es:
 
 $$
 SNR=\frac{P_s}{P_n}
 $$
 
-SNR en dB:
+En decibelios:
 
 $$
 SNR_{dB}=
@@ -983,123 +1110,102 @@ SNR_{dB}=
 \right)
 $$
 
-### 3. Significado de las variables
+Se usa \(10\log_{10}\) porque se comparan potencias. Un SNR alto indica señal dominante; un SNR bajo indica que el ruido puede ocultar la señal.
 
-- \(n(t)\): ruido.
-- \(S_n(\omega)\): PSD del ruido.
-- \(R_n(\tau)\): autocorrelación del ruido.
-- \(N_0/2\): densidad espectral bilateral.
-- \(\Delta\omega\): ancho de banda angular de ruido.
-- \(P_n\): potencia de ruido.
-- \(P_s\): potencia de señal.
-- \(SNR\): relación señal a ruido.
+## 6.7 Efectos del ruido
 
-### 4. ¿Por qué se hace esto?
-
-El ruido se modela para predecir cuánto degrada una señal. En frecuencia, el ruido blanco agrega un piso espectral. En tiempo, el ruido agrega fluctuaciones rápidas e impredecibles.
-
-La potencia de ruido se obtiene integrando la PSD sobre el ancho de banda donde el sistema deja pasar ruido. Por eso reducir ancho de banda reduce potencia de ruido.
-
-### 5. Interpretación física
-
-Blanco significa "misma densidad de potencia en todas las frecuencias". Gaussiano significa "histograma de amplitudes con forma normal".
-
-El ruido blanco ideal tiene ACF tipo delta porque no hay correlación entre instantes distintos. El ruido limitado en banda tiene ACF tipo sinc, porque limitar frecuencia introduce correlación temporal.
-
-En la PSD, el ruido aparece como un piso. Si el piso sube, la SNR baja. Si la señal tiene picos pequeños sobre un piso alto, se vuelve difícil detectarla.
-
-### 6. Recuadro importante
+En tiempo, el ruido agrega fluctuaciones. En la PSD, agrega un piso espectral. En autocorrelación, el ruido blanco agrega una delta en el origen; el ruido limitado en banda agrega una sinc.
 
 > [!IMPORTANT]
-> Blanco describe el espectro; gaussiano describe la distribución de amplitudes; aditivo significa que el ruido se suma a la señal.
-> Memoriza: \(S_n(\omega)=N_0/2\), \(R_n(\tau)=N_0\delta(\tau)/2\), \(P_n=N_0\Delta\omega/(2\pi)\) y SNR.
-> Debes saber demostrar: la potencia de ruido limitado en banda integrando su PSD.
-
-> [!NOTE]
-> El ruido blanco ideal es una idealización útil. Todo sistema físico tiene ancho de banda finito.
+> Blanco se refiere a PSD. Gaussiano se refiere a amplitudes. AWGN significa aditivo, blanco y gaussiano.
 
 > [!WARNING]
-> No digas que todo ruido gaussiano es blanco. Puede ser gaussiano y tener PSD no plana.
+> \(N_0/2\) no es potencia total; es densidad espectral de potencia.
 
 > [!TIP]
-> Para ruido limitado en banda, calcula potencia integrando la PSD solo en la banda que pasa.
+> Para potencia de ruido, integra la PSD solo sobre la banda que pasa el sistema.
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
-1. Explique la diferencia entre ruido blanco y ruido gaussiano.
-2. Calcule la potencia de ruido para una PSD rectangular.
-3. Explique por qué el ruido blanco ideal no es físicamente realizable.
-4. Interprete el efecto de aumentar \(\Delta\omega\) sobre \(P_n\).
+1. Diferencie ruido blanco y ruido gaussiano.
+2. Explique por qué el ruido blanco ideal tiene potencia infinita.
+3. Calcule la potencia de ruido limitado en banda.
+4. Explique cómo el ruido afecta tiempo, PSD y autocorrelación.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Confundir \(N_0/2\) con potencia total.
-2. Olvidar el factor \(1/(2\pi)\) al integrar en \(\omega\).
-3. Decir que la ACF del ruido limitado en banda es una delta.
-4. Usar \(10\log_{10}\) para amplitudes en lugar de potencias.
-
-### 9. Mini-ejemplo
-
-Si \(N_0=2\) y \(\Delta\omega=100\pi\):
+Si \(N_0=4\) y \(\Delta\omega=50\pi\):
 
 $$
-P_n=\frac{N_0\Delta\omega}{2\pi}
-=\frac{2(100\pi)}{2\pi}=100
+P_n=
+\frac{N_0\Delta\omega}{2\pi}
+=
+\frac{4(50\pi)}{2\pi}
+=
+100
 $$
 
 Si \(P_s=1000\):
 
 $$
-SNR=\frac{1000}{100}=10
+SNR=10
 $$
 
 $$
 SNR_{dB}=10\log_{10}(10)=10\text{ dB}
 $$
 
-Ejercicios guía:
-
-1. Calcule \(P_n\) si se duplica el ancho de banda.
-2. Explique cómo cambia \(R_n(\tau)\) al limitar el ruido.
-3. Dibuje la PSD de señal más AWGN.
-
 ---
 
-## 7. Transformación de señales aleatorias por sistemas LTI
+# 7. Transformación de señales aleatorias por sistemas LTI
 
-### 1. Idea principal
+## 7.1 Qué hace un sistema LTI
 
-Un sistema **LTI** es lineal e invariante en el tiempo. Se describe por su respuesta al impulso \(h(t)\) o por su respuesta en frecuencia \(H(\omega)\).
+Un sistema LTI es lineal e invariante en el tiempo. Lineal significa que respeta suma y escalamiento. Invariante en el tiempo significa que si se retrasa la entrada, se retrasa la salida en la misma cantidad.
 
-Si una señal aleatoria WSS entra a un sistema LTI estable, la salida también puede analizarse mediante autocorrelación y PSD. La regla más importante es:
-
-$$
-S_y(\omega)=|H(\omega)|^2S_x(\omega)
-$$
-
-Esto significa que el sistema modifica la potencia de entrada en cada frecuencia según la ganancia cuadrática del filtro.
-
-### 2. Fórmulas principales
-
-Convolución:
+Todo sistema LTI se describe por su respuesta al impulso \(h(t)\). La salida se obtiene por convolución:
 
 $$
 y(t)=h(t)*x(t)
 $$
 
-Dominio de frecuencia:
+En frecuencia:
 
 $$
 Y(\omega)=H(\omega)X(\omega)
 $$
 
-PSD de salida:
+## 7.2 Qué pasa con la PSD
+
+La PSD de salida es:
 
 $$
 S_y(\omega)=|H(\omega)|^2S_x(\omega)
 $$
 
-Potencia de salida:
+Esta fórmula sale de que la salida en frecuencia es \(Y=HX\). Si se calcula potencia espectral:
+
+$$
+|Y(\omega)|^2=|H(\omega)X(\omega)|^2
+$$
+
+Entonces:
+
+$$
+|Y(\omega)|^2=|H(\omega)|^2|X(\omega)|^2
+$$
+
+Al promediar estadísticamente, aparece:
+
+$$
+S_y(\omega)=|H(\omega)|^2S_x(\omega)
+$$
+
+Se usa \(|H(\omega)|^2\), no \(H(\omega)\), porque la PSD mide potencia y la potencia depende de magnitud cuadrada. La fase del filtro no aparece directamente en la PSD.
+
+## 7.3 Potencia de salida
+
+Una vez conocida la PSD de salida:
 
 $$
 P_y=R_y(0)=
@@ -1108,79 +1214,51 @@ P_y=R_y(0)=
 S_y(\omega)\,d\omega
 $$
 
-Para ruido blanco de entrada:
+El procedimiento siempre es:
 
-$$
-S_y(\omega)=|H(\omega)|^2\frac{N_0}{2}
-$$
+1. Hallar \(S_x(\omega)\).
+2. Multiplicar por \(|H(\omega)|^2\).
+3. Integrar para obtener potencia.
 
-### 3. Significado de las variables
+## 7.4 Filtrado de ruido
 
-- \(x(t)\): entrada aleatoria.
-- \(y(t)\): salida.
-- \(h(t)\): respuesta al impulso.
-- \(H(\omega)\): respuesta en frecuencia.
-- \(S_x(\omega)\): PSD de entrada.
-- \(S_y(\omega)\): PSD de salida.
-- \(P_y\): potencia promedio de salida.
-
-### 4. ¿Por qué se hace esto?
-
-En señales deterministas, un sistema LTI multiplica el espectro por \(H(\omega)\). Pero la PSD mide potencia, no amplitud. Como la potencia depende de magnitud cuadrada, la PSD se multiplica por:
-
-$$
-|H(\omega)|^2
-$$
-
-No se usa \(H(\omega)\) directamente porque \(H(\omega)\) puede tener fase, y la PSD no describe fase: describe distribución de potencia.
-
-### 5. Interpretación física
-
-Un filtro pasa bajas aplicado a ruido blanco deja pasar solo bajas frecuencias. La PSD de salida ya no es plana infinita: queda recortada por \(|H(\omega)|^2\).
-
-Filtrar reduce potencia de ruido porque elimina parte del área bajo la PSD. Si el ancho de banda de salida es menor, pasa menos potencia de ruido.
-
-Después del filtrado, la autocorrelación cambia. Un ruido blanco filtrado deja de ser completamente no correlacionado: al limitar su banda, se vuelve más suave en el tiempo y adquiere correlación temporal.
-
-### 6. Recuadro importante
-
-> [!IMPORTANT]
-> En un sistema LTI, la PSD de salida es la PSD de entrada multiplicada por \(|H(\omega)|^2\). Luego la potencia se obtiene integrando \(S_y(\omega)\).
-> Memoriza: \(y=h*x\), \(Y=HX\), \(S_y=|H|^2S_x\).
-> Debes saber demostrar: por qué se usa \(|H(\omega)|^2\) y cómo calcular potencia de salida.
-
-> [!NOTE]
-> Filtrar en frecuencia cambia la memoria temporal. Reducir ancho de banda normalmente aumenta el tiempo de correlación.
-
-> [!WARNING]
-> No multipliques la PSD por \(H(\omega)\). La PSD se multiplica por la magnitud cuadrada.
-
-> [!TIP]
-> Para calcular potencia de salida: primero encuentra \(S_y(\omega)\), luego integra.
-
-### 7. Preguntas tipo parcial
-
-1. Calcule \(S_y(\omega)\) dada \(S_x(\omega)\) y \(H(\omega)\).
-2. Explique por qué aparece \(|H(\omega)|^2\).
-3. Calcule la potencia de ruido a la salida de un filtro pasa bajas ideal.
-4. Explique cómo cambia la autocorrelación de ruido blanco después de filtrarlo.
-
-### 8. Errores comunes
-
-1. Confundir respuesta en frecuencia con PSD.
-2. Olvidar integrar la PSD para obtener potencia.
-3. Ignorar el ancho de banda del filtro al calcular ruido.
-4. Creer que el filtro solo cambia amplitud temporal y no estadísticas.
-
-### 9. Mini-ejemplo
-
-Ruido blanco con:
+Si entra ruido blanco:
 
 $$
 S_n(\omega)=\frac{N_0}{2}
 $$
 
-pasa por un filtro pasa bajas ideal:
+La salida tiene:
+
+$$
+S_y(\omega)=|H(\omega)|^2\frac{N_0}{2}
+$$
+
+Si \(H(\omega)\) es pasa bajas, solo pasa una parte del ruido. Como la potencia es área bajo la PSD, reducir ancho de banda reduce potencia de ruido.
+
+## 7.5 Relación entre filtrado y correlación temporal
+
+Un ruido blanco ideal tiene ACF delta, es decir, no tiene memoria. Al pasar por un filtro pasa bajas, su espectro se vuelve limitado. Una PSD más angosta implica una autocorrelación más ancha. Por eso el ruido filtrado se vuelve más suave y temporalmente correlacionado.
+
+> [!IMPORTANT]
+> Un sistema LTI transforma la PSD multiplicando por \(|H(\omega)|^2\). Después, la potencia se calcula integrando.
+
+> [!WARNING]
+> No multipliques la PSD por \(H(\omega)\). La PSD siempre usa magnitud cuadrada.
+
+> [!TIP]
+> Para ruido blanco filtrado, la forma de la PSD de salida es básicamente la forma de \(|H(\omega)|^2\).
+
+## Preguntas tipo parcial
+
+1. Calcule \(S_y(\omega)\) dado \(S_x(\omega)\) y \(H(\omega)\).
+2. Explique por qué aparece \(|H(\omega)|^2\).
+3. Calcule la potencia de salida de ruido blanco filtrado.
+4. Explique cómo cambia la autocorrelación después de un pasa bajas.
+
+## Mini-ejemplo
+
+Si \(S_n(\omega)=N_0/2\) y:
 
 $$
 H(\omega)=
@@ -1190,104 +1268,137 @@ H(\omega)=
 \end{cases}
 $$
 
-Entonces:
+entonces:
 
 $$
 S_y(\omega)=
 \begin{cases}
-\frac{N_0}{2}, & |\omega|<B\\
+\dfrac{N_0}{2}, & |\omega|<B\\
 0, & |\omega|\geq B
 \end{cases}
 $$
 
-Potencia:
+y:
 
 $$
-P_y=\frac{1}{2\pi}\int_{-B}^{B}\frac{N_0}{2}d\omega
-=\frac{N_0B}{2\pi}
+P_y=
+\frac{1}{2\pi}
+\int_{-B}^{B}
+\frac{N_0}{2}\,d\omega
+=
+\frac{N_0B}{2\pi}
 $$
-
-Ejercicios guía:
-
-1. Repita el cálculo si \(|H(\omega)|=2\) en la banda.
-2. Explique qué pasa si el filtro es pasa banda.
-3. Relacione el ancho de banda de salida con \(R_y(\tau)\).
 
 ---
 
-## 8. Modulación DSB, canal AWGN y demodulación
+# 8. Modulación DSB, canal AWGN y demodulación
 
-### 1. Idea principal
+## 8.1 Por qué se modula
 
-La **modulación DSB** traslada un mensaje de banda base alrededor de una frecuencia portadora \(\omega_c\). DSB significa **double sideband**, porque aparecen dos bandas laterales: una arriba y otra abajo de la portadora.
+Un mensaje \(m(t)\) suele estar en banda base, cerca de frecuencia cero. Para transmitirlo por antena, canal pasabanda o multiplexación, se traslada a una frecuencia portadora \(\omega_c\). Ese traslado se logra multiplicando por una señal sinusoidal.
 
-En **DSB-SC**, la portadora está suprimida. En **AM convencional** o **DSB-LC**, la portadora grande sí se transmite para permitir detección de envolvente.
+La identidad clave es:
 
-Un **canal AWGN** agrega ruido blanco gaussiano aditivo a la señal modulada. La demodulación intenta recuperar el mensaje original desde la señal recibida.
+$$
+\cos(\omega_ct)=\frac{1}{2}
+\left(
+e^{j\omega_ct}+e^{-j\omega_ct}
+\right)
+$$
 
-### 2. Fórmulas principales
+Multiplicar por \(\cos(\omega_ct)\) genera dos copias espectrales: una desplazada a \(+\omega_c\) y otra a \(-\omega_c\).
 
-#### 8.1 DSB-SC
+## 8.2 DSB-SC
 
-Señal modulada:
+En DSB-SC:
 
 $$
 s(t)=A_cm(t)\cos(\omega_ct)
 $$
 
-Espectro:
+La portadora está suprimida porque no se transmite como un término independiente; solo aparece multiplicando al mensaje.
+
+Si \(M(\omega)\) es el espectro del mensaje:
 
 $$
 S(\omega)=
 \frac{A_c}{2}
-[
+\left[
 M(\omega-\omega_c)+M(\omega+\omega_c)
-]
+\right]
 $$
 
-Ancho de banda:
+El ancho de banda es:
 
 $$
 B_{DSB}=2B_m
 $$
 
-#### 8.2 AM convencional o DSB-LC
+Esto ocurre porque el mensaje ocupa \(B_m\) por encima y \(B_m\) por debajo de la portadora.
+
+En tiempo, la portadora rápida aparece con amplitud controlada por \(m(t)\). En PSD, aparecen dos bandas laterales alrededor de \(\pm\omega_c\).
+
+## 8.3 AM convencional o DSB-LC
+
+En AM convencional se transmite una portadora grande:
 
 $$
 s(t)=A_c[1+\mu m_n(t)]\cos(\omega_ct)
 $$
 
-Condición para evitar sobremodulación:
+DSB-LC significa double sideband large carrier: dos bandas laterales más portadora grande.
+
+\(\mu\) es el índice de modulación. El mensaje se normaliza como \(m_n(t)\) para controlar que:
 
 $$
-0\leq\mu\leq 1
+|m_n(t)|\leq1
 $$
 
-Casos:
+La envolvente ideal es:
+
+$$
+A_c[1+\mu m_n(t)]
+$$
+
+Para evitar sobremodulación:
+
+$$
+0\leq\mu\leq1
+$$
+
+Si:
 
 $$
 \mu<1
 $$
 
-Submodulación.
+hay submodulación. La envolvente sigue al mensaje sin tocar cero.
+
+Si:
 
 $$
 \mu=1
 $$
 
-Modulación al límite.
+hay modulación al límite. La envolvente puede tocar cero, pero no se invierte.
+
+Si:
 
 $$
 \mu>1
 $$
 
-Sobremodulación.
+hay sobremodulación. La envolvente cruza cero y se invierte. Un detector de envolvente recuperaría una señal distorsionada.
 
-#### 8.3 Canal AWGN
+## 8.4 Canal AWGN
+
+Un canal AWGN se modela como:
 
 $$
 y(t)=x(t)+n(t)
 $$
+
+con:
 
 $$
 n(t)\sim AWGN
@@ -1299,9 +1410,17 @@ $$
 S_y(\omega)=S_x(\omega)+S_n(\omega)
 $$
 
-#### 8.4 Demodulación coherente con filtro convencional
+En tiempo, el ruido se ve como fluctuaciones añadidas. En PSD, aparece como un piso espectral. En autocorrelación:
 
-Partiendo de DSB-SC recibido ideal:
+$$
+R_y(\tau)=R_x(\tau)+R_n(\tau)
+$$
+
+Un SNR alto permite distinguir la señal. Un SNR bajo hace que el piso de ruido tape componentes espectrales y distorsione la recuperación temporal.
+
+## 8.5 Demodulación coherente
+
+Para recuperar DSB-SC se multiplica otra vez por la portadora:
 
 $$
 y(t)\cos(\omega_ct)
@@ -1309,7 +1428,7 @@ y(t)\cos(\omega_ct)
 A_cm(t)\cos^2(\omega_ct)
 $$
 
-Usando:
+Usamos:
 
 $$
 \cos^2(\omega_ct)
@@ -1327,195 +1446,131 @@ y(t)\cos(\omega_ct)
 \frac{A_c}{2}m(t)\cos(2\omega_ct)
 $$
 
-Después del filtro pasa bajas:
+La primera parte está en banda base:
+
+$$
+\frac{A_c}{2}m(t)
+$$
+
+La segunda está alrededor de \(2\omega_c\):
+
+$$
+\frac{A_c}{2}m(t)\cos(2\omega_ct)
+$$
+
+Un filtro pasa bajas elimina la componente de alta frecuencia:
 
 $$
 \hat{m}(t)=
 \frac{A_c}{2}m(t)
 $$
 
-Con error de fase \(\theta\), la recuperación se escala aproximadamente por:
+Luego se corrige la ganancia multiplicando por \(2/A_c\).
+
+La demodulación coherente necesita sincronización de frecuencia y fase. Si hay error de fase \(\theta\), la señal recuperada se escala por un factor cercano a:
 
 $$
 \cos(\theta)
 $$
 
-#### 8.5 Demodulación con Hilbert
+Si \(\theta=90^\circ\), la recuperación ideal se anula.
 
-Señal analítica:
+## 8.6 Demodulación con Hilbert
+
+La transformada de Hilbert genera una versión en cuadratura de la señal. La señal analítica es:
 
 $$
 x_a(t)=x(t)+j\mathcal{H}\{x(t)\}
 $$
 
-Envolvente:
+La envolvente se obtiene como:
 
 $$
 A_x(t)=|x_a(t)|
 $$
 
-Fase instantánea:
+La fase instantánea es:
 
 $$
 \phi_x(t)=\arg\{x_a(t)\}
 $$
 
-### 3. Significado de las variables
+Hilbert es útil cuando se quiere analizar envolvente y fase directamente, por ejemplo en señales AM o pasabanda. Puede ser sensible al ruido, a la sobremodulación, a cruces por cero y a señales que no están bien separadas espectralmente.
 
-- \(m(t)\): mensaje en banda base.
-- \(m_n(t)\): mensaje normalizado, usualmente con \(|m_n(t)|\leq 1\).
-- \(A_c\): amplitud de portadora.
-- \(\omega_c\): frecuencia angular de portadora.
-- \(B_m\): ancho de banda del mensaje.
-- \(B_{DSB}\): ancho de banda de la señal DSB.
-- \(\mu\): índice de modulación en AM.
-- \(x(t)\): señal transmitida o señal antes del canal.
-- \(y(t)\): señal recibida con ruido.
-- \(n(t)\): ruido AWGN.
-- \(\mathcal{H}\{\cdot\}\): transformada de Hilbert.
-- \(x_a(t)\): señal analítica.
-- \(A_x(t)\): envolvente.
-- \(\phi_x(t)\): fase instantánea.
-
-### 4. ¿Por qué se hace esto?
-
-Multiplicar por una portadora \(\cos(\omega_ct)\) traslada el espectro porque:
-
-$$
-\cos(\omega_ct)=\frac{1}{2}(e^{j\omega_ct}+e^{-j\omega_ct})
-$$
-
-Multiplicar en tiempo equivale a desplazar en frecuencia. Por eso aparecen dos copias del mensaje: una centrada en \(+\omega_c\) y otra en \(-\omega_c\).
-
-El ancho de banda DSB es \(2B_m\) porque la banda superior ocupa \(B_m\) por encima de la portadora y la inferior ocupa \(B_m\) por debajo.
-
-En demodulación coherente se multiplica otra vez por la portadora para bajar el espectro a banda base. El producto genera una componente útil en baja frecuencia y otra alrededor de \(2\omega_c\), que se elimina con un filtro pasa bajas.
-
-Hilbert se usa para construir la señal analítica, obtener envolvente y fase instantánea sin multiplicar explícitamente por una portadora sincronizada.
-
-### 5. Interpretación física
-
-En DSB-SC, la portadora no aparece como una línea dominante; solo se transmiten bandas laterales. Esto ahorra potencia, pero exige demodulación coherente.
-
-En AM convencional o DSB-LC, se transmite una portadora grande. La envolvente es:
-
-$$
-A_c[1+\mu m_n(t)]
-$$
-
-Si \(\mu<1\), hay submodulación: la envolvente sigue al mensaje pero con margen. Si \(\mu=1\), la modulación llega al límite sin cruzar cero. Si \(\mu>1\), hay sobremodulación: la envolvente cruza cero y se invierte, produciendo distorsión en detectores de envolvente.
-
-En un canal AWGN, en tiempo se observan fluctuaciones superpuestas. En PSD, el ruido agrega un piso espectral:
-
-$$
-S_y(\omega)=S_x(\omega)+S_n(\omega)
-$$
-
-En autocorrelación, si el ruido es independiente:
-
-$$
-R_y(\tau)=R_x(\tau)+R_n(\tau)
-$$
-
-SNR alto significa que la potencia de señal domina al ruido. SNR bajo significa que el ruido puede ocultar detalles del mensaje.
-
-Hilbert es útil para analizar envolvente y fase, especialmente en señales AM y señales pasabanda. Puede fallar o volverse sensible cuando hay mucho ruido, sobremodulación, cruces por cero, componentes no separadas o señales que no cumplen bien la hipótesis de banda estrecha.
-
-#### Comparación final
+## 8.7 Comparación entre demodulación convencional y Hilbert
 
 | Criterio | Filtro convencional | Hilbert |
 |---|---|---|
-| Calidad de recuperación | Muy buena si hay sincronización y buen filtrado | Buena si la señal analítica representa bien la señal |
-| Sensibilidad al ruido | Depende del canal y del filtro pasa bajas | Alta en envolvente y fase instantánea |
-| Necesidad de sincronización | Sí, requiere fase y frecuencia correctas | No siempre requiere portadora local explícita |
-| Efecto del índice de modulación | En AM, sobremodulación distorsiona la envolvente | También sufre con cruces e inversión de envolvente |
-| Distorsión | Aparece por error de fase, frecuencia o filtro mal elegido | Aparece por ruido, mala separación espectral o envolvente mal definida |
-| Complejidad | Conceptualmente simple; requiere oscilador local y LPF | Requiere transformada de Hilbert y señal analítica |
-| Interpretación de envolvente y fase | Indirecta | Directa mediante \(|x_a(t)|\) y \(\arg(x_a(t))\) |
-
-### 6. Recuadro importante
+| Recuperación | Muy buena si la portadora local está sincronizada | Buena si la señal analítica está bien definida |
+| Ruido | El LPF puede rechazar ruido fuera de banda | La envolvente y fase pueden volverse ruidosas |
+| Sincronización | Requiere fase y frecuencia correctas | No siempre requiere oscilador local explícito |
+| Índice de modulación | La sobremodulación afecta fuertemente AM | También sufre con cruces de envolvente |
+| Distorsión | Por error de fase, frecuencia o filtrado | Por ruido, mala banda o fase inestable |
+| Complejidad | Conceptualmente directa | Requiere Hilbert y manejo de señal analítica |
+| Interpretación | Recupera banda base | Da envolvente y fase instantánea |
 
 > [!IMPORTANT]
-> DSB traslada el mensaje a \(\pm\omega_c\). Demodular coherentemente vuelve a multiplicar por la portadora y usa un pasa bajas para recuperar banda base.
-> Memoriza: DSB-SC, AM convencional, condición \(0\leq\mu\leq1\), canal AWGN y fórmulas de Hilbert.
-> Debes saber demostrar: traslado espectral, demodulación coherente y efecto del término en \(2\omega_c\).
-
-> [!NOTE]
-> DSB-SC ahorra potencia al suprimir la portadora, pero exige sincronización. AM convencional transmite portadora para facilitar recuperación por envolvente.
+> DSB traslada el espectro. Demodular coherentemente lo vuelve a bajar a banda base y elimina el término en \(2\omega_c\).
 
 > [!WARNING]
-> En AM convencional, \(\mu>1\) produce sobremodulación y distorsiona la envolvente.
+> DSB-SC no se recupera bien con detector de envolvente si no hay portadora.
 
 > [!TIP]
-> Para demodulación coherente, siempre separa el término de banda base y el término en \(2\omega_c\).
+> En demodulación coherente, siempre busca dos términos: uno útil en banda base y otro no deseado en \(2\omega_c\).
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
-1. Demuestre que multiplicar por \(\cos(\omega_ct)\) genera dos bandas laterales.
+1. Demuestre el traslado espectral en DSB-SC.
 2. Explique por qué \(B_{DSB}=2B_m\).
-3. Desarrolle la demodulación coherente de DSB-SC.
-4. Compare AM convencional y DSB-SC en potencia, espectro y demodulación.
-5. Explique el efecto de AWGN sobre tiempo, PSD y autocorrelación.
+3. Desarrolle la demodulación coherente paso a paso.
+4. Explique qué ocurre cuando \(\mu>1\) en AM.
+5. Compare demodulación con filtro convencional y con Hilbert.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Creer que DSB-SC contiene una portadora grande visible en el espectro.
-2. Olvidar el factor \(1/2\) al multiplicar por cosenos.
-3. Usar detector de envolvente en DSB-SC sin portadora.
-4. Ignorar que la demodulación coherente requiere sincronización de fase y frecuencia.
-5. Confundir envolvente con la señal modulada completa.
-
-### 9. Mini-ejemplo
-
-Para DSB-SC:
+Si:
 
 $$
 s(t)=A_cm(t)\cos(\omega_ct)
 $$
 
-Demodulamos:
+entonces:
 
 $$
-s(t)\cos(\omega_ct)=A_cm(t)\cos^2(\omega_ct)
+s(t)\cos(\omega_ct)
+=
+\frac{A_c}{2}m(t)
++
+\frac{A_c}{2}m(t)\cos(2\omega_ct)
 $$
 
-$$
-=\frac{A_c}{2}m(t)+\frac{A_c}{2}m(t)\cos(2\omega_ct)
-$$
-
-Un filtro pasa bajas elimina el término en \(2\omega_c\):
+El pasa bajas conserva:
 
 $$
-\hat{m}(t)=\frac{A_c}{2}m(t)
+\frac{A_c}{2}m(t)
 $$
 
-Si se quiere recuperar exactamente \(m(t)\), se compensa la ganancia multiplicando por \(2/A_c\).
-
-Ejercicios guía:
-
-1. Dibuje la PSD de DSB-SC para un mensaje limitado a \(B_m\).
-2. Explique qué cambia si se agrega AWGN.
-3. Compare la envolvente para \(\mu=0.5\), \(\mu=1\) y \(\mu=1.5\).
+Así se recupera el mensaje salvo por una ganancia constante.
 
 ---
 
-## 9. PM: banda angosta, DSB y banda ancha
+# 9. PM: banda angosta, DSB y banda ancha
 
-### 1. Idea principal
+## 9.1 Qué significa modular la fase
 
-La **modulación en fase** o **PM** cambia la fase instantánea de una portadora según el mensaje. A diferencia de AM, la amplitud ideal de la señal PM permanece constante.
-
-Si la desviación de fase es pequeña, se obtiene **PM de banda angosta**, que se parece a una portadora más una señal DSB-SC en cuadratura. Si la desviación de fase es grande, se obtiene **PM de banda ancha**, con múltiples bandas laterales y ancho de banda teórico infinito.
-
-### 2. Fórmulas principales
-
-#### 9.1 Señal PM
-
-Fórmula general:
+En modulación en fase, la información no se coloca en la amplitud sino en el argumento del coseno:
 
 $$
 s_{PM}(t)=A_c\cos(\omega_ct+k_pm(t))
 $$
+
+La fase instantánea es:
+
+$$
+\phi(t)=\omega_ct+k_pm(t)
+$$
+
+\(k_p\) mide cuántos radianes de fase se producen por unidad de mensaje. En PM ideal la amplitud \(A_c\) permanece constante.
 
 Si:
 
@@ -1535,15 +1590,17 @@ $$
 \beta=k_pA_m
 $$
 
-#### 9.2 PM de banda angosta
+\(\beta\) es el índice de fase. Mide la máxima desviación de fase.
 
-Condición:
+## 9.2 PM de banda angosta
+
+La condición de banda angosta es:
 
 $$
-\beta\ll 1
+\beta\ll1
 $$
 
-Aproximaciones:
+Esto permite usar aproximaciones de ángulo pequeño:
 
 $$
 \cos(\beta m(t))\approx 1
@@ -1552,8 +1609,6 @@ $$
 $$
 \sin(\beta m(t))\approx \beta m(t)
 $$
-
-Demostración:
 
 Partimos de:
 
@@ -1577,7 +1632,7 @@ A_c\cos(\omega_ct)\cos(\beta m(t))
 A_c\sin(\omega_ct)\sin(\beta m(t))
 $$
 
-Con \(\beta\ll1\):
+Aplicando las aproximaciones:
 
 $$
 s_{PM}(t)
@@ -1587,29 +1642,50 @@ A_c\cos(\omega_ct)
 A_c\beta m(t)\sin(\omega_ct)
 $$
 
+Esta expresión tiene dos partes. La primera es una portadora pura:
+
+$$
+A_c\cos(\omega_ct)
+$$
+
+La segunda es proporcional a \(m(t)\) multiplicado por \(\sin(\omega_ct)\):
+
+$$
+-A_c\beta m(t)\sin(\omega_ct)
+$$
+
+Eso es una modulación DSB-SC en cuadratura, porque usa seno en lugar de coseno.
+
+## 9.3 Bandas laterales en NBPM
+
 Para:
 
 $$
 m(t)=\cos(\omega_mt)
 $$
 
-se obtiene:
+tenemos:
 
 $$
 s_{PM}(t)
 \approx
 A_c\cos(\omega_ct)
 -
-A_c\beta \cos(\omega_mt)\sin(\omega_ct)
+A_c\beta\cos(\omega_mt)\sin(\omega_ct)
 $$
 
 Usando:
 
 $$
-\sin(a)\cos(b)=\frac{1}{2}[\sin(a+b)+\sin(a-b)]
+\sin(a)\cos(b)
+=
+\frac{1}{2}
+\left[
+\sin(a+b)+\sin(a-b)
+\right]
 $$
 
-llegamos a:
+queda:
 
 $$
 s_{PM}(t)
@@ -1617,11 +1693,11 @@ s_{PM}(t)
 A_c\cos(\omega_ct)
 -
 \frac{A_c\beta}{2}
-[
+\left[
 \sin((\omega_c+\omega_m)t)
 +
 \sin((\omega_c-\omega_m)t)
-]
+\right]
 $$
 
 Aparecen principalmente:
@@ -1638,21 +1714,23 @@ $$
 \omega_c+\omega_m
 $$
 
-Ancho de banda:
+Por eso:
 
 $$
 B_{NBPM}\approx 2f_m
 $$
 
-#### 9.3 PM de banda ancha
+## 9.4 PM de banda ancha
 
-Condición:
+Cuando:
 
 $$
 \beta>1
 $$
 
-Componentes espectrales:
+la aproximación de ángulo pequeño ya no es válida. Los términos de orden superior se vuelven importantes y aparecen muchas bandas laterales.
+
+Para mensaje sinusoidal, el espectro contiene componentes en:
 
 $$
 \omega=\omega_c\pm n\omega_m
@@ -1664,13 +1742,17 @@ $$
 n=1,2,3,\dots
 $$
 
-Ancho de banda teórico:
+Teóricamente hay infinitas bandas laterales:
 
 $$
 B_{WBPM,\text{teórico}}\to\infty
 $$
 
-Regla de Carson:
+En la práctica, las bandas muy lejanas tienen potencia muy pequeña y se ignoran.
+
+## 9.5 Regla de Carson
+
+La regla de Carson estima el ancho de banda práctico:
 
 $$
 B_{Carson}\approx 2(\Delta f+f_m)
@@ -1688,118 +1770,88 @@ $$
 B_{Carson,PM}\approx 2(\beta+1)f_m
 $$
 
-### 3. Significado de las variables
-
-- \(s_{PM}(t)\): señal modulada en fase.
-- \(A_c\): amplitud de portadora.
-- \(\omega_c\): frecuencia angular de portadora.
-- \(m(t)\): mensaje.
-- \(k_p\): sensibilidad de fase, mide cuántos radianes cambia la fase por unidad de mensaje.
-- \(A_m\): amplitud del mensaje sinusoidal.
-- \(\omega_m\): frecuencia angular del mensaje.
-- \(\beta\): índice de fase.
-- \(\Delta f\): desviación máxima de frecuencia.
-- \(f_m\): frecuencia máxima del mensaje sinusoidal.
-- \(B_{Carson}\): ancho de banda práctico estimado.
-
-### 4. ¿Por qué se hace esto?
-
-En PM, el mensaje entra dentro del argumento del coseno. Eso significa que modifica la fase instantánea:
-
-$$
-\phi(t)=\omega_ct+k_pm(t)
-$$
-
-No modifica directamente la amplitud \(A_c\). Por eso PM ideal tiene envolvente constante.
-
-Para \(\beta\ll1\), la aproximación de ángulo pequeño permite linealizar la señal. El resultado muestra una portadora fuerte y un término proporcional a \(m(t)\sin(\omega_ct)\). Ese segundo término es una modulación DSB-SC, pero en cuadratura porque usa seno en vez de coseno.
-
-Para \(\beta>1\), la aproximación ya no sirve porque los términos de orden superior ya no son despreciables. Aparecen múltiples bandas laterales alrededor de \(\omega_c\).
-
-### 5. Interpretación física
-
-Modular fase significa adelantar o atrasar los cruces de la portadora según el mensaje. La amplitud ideal no sube ni baja; lo que cambia es la posición temporal de los ciclos.
-
-En PM de banda angosta, la señal se parece a una portadora casi pura con pequeñas bandas laterales. Por eso su ancho de banda aproximado es parecido al de AM/DSB con mensaje sinusoidal: \(2f_m\).
-
-En PM de banda ancha, la fase varía mucho. El espectro contiene componentes en \(\omega_c\pm n\omega_m\) para muchos valores de \(n\). Teóricamente hay infinitas bandas laterales, aunque en la práctica las de potencia muy pequeña se ignoran.
-
-La regla de Carson estima un ancho de banda útil que contiene la mayor parte de la potencia. No dice que no haya energía fuera; dice que fuera de esa banda suele ser despreciable para diseño práctico.
-
-### 6. Recuadro importante
+Carson no da el ancho de banda matemático total. Da una banda útil que contiene la mayor parte de la potencia.
 
 > [!IMPORTANT]
-> PM de banda angosta se aproxima como una portadora más un término DSB-SC en cuadratura. PM de banda ancha tiene múltiples bandas laterales y se estima con Carson.
-> Memoriza: \(s_{PM}(t)\), \(\beta=k_pA_m\), condición \(\beta\ll1\), condición \(\beta>1\) y Carson.
-> Debes saber demostrar: la aproximación NBPM desde \(\cos(a+b)\) y la aparición de bandas laterales.
-
-> [!NOTE]
-> En PM ideal, la amplitud \(A_c\) permanece constante; la información está en la fase.
+> PM de banda angosta se parece a una portadora más DSB-SC en cuadratura. PM de banda ancha genera múltiples bandas laterales.
 
 > [!WARNING]
-> No uses la aproximación \(\sin(x)\approx x\), \(\cos(x)\approx1\) si \(\beta\) no es pequeño.
+> No uses \(\sin(x)\approx x\) y \(\cos(x)\approx1\) si \(\beta\) no es mucho menor que 1.
 
 > [!TIP]
-> Para identificar NBPM en parcial, busca \(\beta\ll1\) y desarrolla con \(\cos(a+b)\).
+> Para demostrar NBPM, empieza siempre con \(\cos(a+b)\).
 
-### 7. Preguntas tipo parcial
+## Preguntas tipo parcial
 
 1. Demuestre la aproximación de PM de banda angosta.
 2. Explique por qué NBPM se relaciona con DSB-SC.
-3. Use Carson para estimar el ancho de banda de una señal PM.
-4. Explique por qué PM de banda ancha tiene ancho de banda teórico infinito.
+3. Explique por qué WBPM tiene ancho de banda teórico infinito.
+4. Use Carson para estimar el ancho de banda de PM.
 
-### 8. Errores comunes
+## Mini-ejemplo
 
-1. Confundir índice de fase \(\beta\) con índice de modulación AM \(\mu\).
-2. Decir que PM ideal cambia amplitud.
-3. Aplicar Carson como si fuera ancho de banda exacto.
-4. Olvidar que el término DSB-SC de NBPM está en cuadratura.
-
-### 9. Mini-ejemplo
-
-Si \(m(t)=\cos(2\pi 1\,\text{kHz}\,t)\) y \(\beta=0.1\), entonces \(\beta\ll1\) y la señal es NBPM.
-
-El ancho de banda aproximado es:
+Si \(f_m=2\text{ kHz}\) y \(\beta=0.2\), la señal puede tratarse como NBPM:
 
 $$
-B_{NBPM}\approx 2f_m=2(1\,\text{kHz})=2\,\text{kHz}
+B_{NBPM}\approx2f_m=4\text{ kHz}
 $$
 
-Si \(\beta=5\), se considera PM de banda ancha. Por Carson:
+Si \(\beta=4\), se usa Carson:
 
 $$
-B_{Carson,PM}\approx 2(\beta+1)f_m
-=2(6)(1\,\text{kHz})=12\,\text{kHz}
+B_{Carson,PM}\approx2(\beta+1)f_m
 $$
 
-Ejercicios guía:
-
-1. Demuestre la expansión de NBPM paso a paso.
-2. Calcule \(B_{Carson}\) para \(\beta=3\) y \(f_m=5\text{ kHz}\).
-3. Explique por qué aparecen bandas laterales de orden \(n\).
+$$
+B_{Carson,PM}\approx2(5)(2\text{ kHz})=20\text{ kHz}
+$$
 
 ---
 
 # Cómo se conectan todos los temas
 
-1. Primero se define una señal aleatoria como un proceso con muchas realizaciones posibles.
-2. Luego se calculan sus estadísticas: media, varianza, RMS, potencia y momentos.
-3. Si el proceso es WSS, la media es constante y la autocorrelación depende solo de \(\tau\).
-4. Con la autocorrelación \(R_x(\tau)\) se obtiene la PSD \(S_x(\omega)\) mediante Wiener-Khinchine.
-5. Con la PSD se calcula potencia total, potencia en bandas específicas y ancho de banda.
-6. Si la señal pasa por un sistema LTI, su PSD cambia por \(|H(\omega)|^2\).
-7. Si hay ruido AWGN independiente, la PSD total suma señal más ruido: \(S_y(\omega)=S_x(\omega)+S_n(\omega)\).
-8. En modulación DSB, multiplicar por la portadora traslada el espectro del mensaje alrededor de \(\pm\omega_c\).
-9. En demodulación coherente, se multiplica otra vez por la portadora y se usa un filtro pasa bajas para recuperar banda base.
-10. En PM de banda angosta, la aproximación de ángulo pequeño muestra una portadora más un término DSB-SC en cuadratura.
-11. En PM de banda ancha, la aproximación deja de servir y aparecen múltiples bandas laterales; Carson estima el ancho de banda práctico.
+Primero se define la señal aleatoria como un proceso con muchas realizaciones posibles. Como no se puede predecir exactamente cada valor, se calculan estadísticas: media, varianza, potencia, RMS y momentos.
+
+Cuando esas estadísticas son estables en el tiempo, se puede usar el modelo WSS. En WSS, la autocorrelación depende solo del retardo \(\tau\), lo que permite estudiar memoria temporal.
+
+La autocorrelación no solo dice cuánto se parece la señal a sí misma; también contiene la potencia, porque:
+
+$$
+R_x(0)=P_x
+$$
+
+Con Wiener-Khinchine, la autocorrelación se transforma en PSD:
+
+$$
+S_x(\omega)=\mathcal{F}\{R_x(\tau)\}
+$$
+
+La PSD muestra cómo se reparte la potencia en frecuencia. Integrarla da la potencia total:
+
+$$
+P_x=
+\frac{1}{2\pi}
+\int_{-\infty}^{\infty}S_x(\omega)\,d\omega
+$$
+
+Si la señal pasa por un sistema LTI, la PSD cambia por:
+
+$$
+S_y(\omega)=|H(\omega)|^2S_x(\omega)
+$$
+
+Si aparece AWGN independiente, la PSD total suma señal más ruido:
+
+$$
+S_y(\omega)=S_x(\omega)+S_n(\omega)
+$$
+
+En modulación DSB, multiplicar por una portadora traslada el espectro a \(\pm\omega_c\). En demodulación coherente, multiplicar otra vez por la portadora devuelve una copia a banda base y otra a \(2\omega_c\); el filtro pasa bajas conserva la primera.
+
+En PM de banda angosta, la aproximación de ángulo pequeño convierte la señal en una portadora más un término DSB-SC en cuadratura. En PM de banda ancha, aparecen múltiples bandas laterales, y la regla de Carson estima el ancho de banda práctico.
 
 > [!IMPORTANT]
-> La ruta mental del parcial es: estadística temporal \(\rightarrow\) autocorrelación \(\rightarrow\) PSD \(\rightarrow\) potencia/ancho de banda \(\rightarrow\) sistemas LTI \(\rightarrow\) ruido \(\rightarrow\) modulación/demodulación.
-
-> [!TIP]
-> Si un problema mezcla temas, identifica primero qué dominio conviene: tiempo para media/autocorrelación, frecuencia para PSD/filtros/ancho de banda.
+> La cadena completa es: proceso aleatorio, estadísticas, WSS, autocorrelación, PSD, potencia, sistemas LTI, ruido, modulación, demodulación y PM.
 
 ---
 
@@ -1820,41 +1872,111 @@ Ejercicios guía:
 13. Demuestre que PM de banda ancha tiene ancho de banda teóricamente infinito.
 14. Use la regla de Carson para estimar ancho de banda de PM.
 15. Explique qué pasa con la autocorrelación y la PSD cuando una señal pasa por un filtro pasa bajas.
-16. Explique por qué una autocorrelación angosta implica una PSD ancha.
-17. Compare estimador sesgado y no sesgado de autocorrelación.
-18. Explique por qué Welch reduce la varianza de la PSD estimada.
-19. Explique la diferencia física entre potencia, varianza y RMS.
-20. Analice el efecto de sobremodulación en AM convencional.
 
----
+# Fórmulas que debes dominar
 
-# Qué memorizar y qué saber demostrar
+Media:
 
-## Debo memorizar
+$$
+\mu_x(t)=E\{x(t)\}
+$$
 
-- \(P_x=R_x(0)=E\{|x(t)|^2\}\).
-- \(K_x(0)=\sigma_x^2\).
-- Para WSS: \(E\{x(t)\}=\mu_x\) constante y \(R_x(t_1,t_2)=R_x(\tau)\).
-- Wiener-Khinchine: \(S_x(\omega)=\mathcal{F}\{R_x(\tau)\}\).
-- Sistema LTI: \(S_y(\omega)=|H(\omega)|^2S_x(\omega)\).
-- Ruido blanco: \(S_n(\omega)=N_0/2\), \(R_n(\tau)=N_0\delta(\tau)/2\).
-- DSB-SC: \(s(t)=A_cm(t)\cos(\omega_ct)\), \(B_{DSB}=2B_m\).
-- AM convencional: \(s(t)=A_c[1+\mu m_n(t)]\cos(\omega_ct)\), sin sobremodulación si \(0\leq\mu\leq1\).
-- NBPM: \(s_{PM}(t)\approx A_c\cos(\omega_ct)-A_c\beta m(t)\sin(\omega_ct)\).
-- Carson para PM: \(B_{Carson,PM}\approx2(\beta+1)f_m\).
+Momento:
 
-## Debo saber demostrar
+$$
+m_n(t)=E\{x^n(t)\}
+$$
 
-- \(P_x=\sigma_x^2+\mu_x^2\) para señales reales.
-- \(R_x(0)=P_x\).
-- \(K_x(0)=\sigma_x^2\).
-- La ACF del seno con fase aleatoria.
-- La PSD de la ACF exponencial.
-- La ACF de una PSD rectangular.
-- Que multiplicar por una portadora traslada el espectro.
-- La demodulación coherente de DSB-SC usando \(\cos^2(\omega_ct)\).
-- La aproximación de PM de banda angosta usando \(\cos(a+b)\).
-- Por qué la PSD de salida de un LTI usa \(|H(\omega)|^2\).
+Varianza:
 
-> [!WARNING]
-> En el parcial no basta con escribir fórmulas. Acompaña cada resultado con una interpretación: potencia, memoria temporal, ancho de banda, ruido o recuperación del mensaje.
+$$
+\sigma_x^2(t)=E\{(x(t)-\mu_x(t))^2\}
+$$
+
+Potencia:
+
+$$
+P_x=E\{|x(t)|^2\}
+$$
+
+RMS:
+
+$$
+x_{RMS}=\sqrt{E\{x^2(t)\}}
+$$
+
+WSS:
+
+$$
+E\{x(t)\}=\mu_x=\text{constante}
+$$
+
+$$
+R_x(t_1,t_2)=R_x(t_2-t_1)=R_x(\tau)
+$$
+
+Autocorrelación:
+
+$$
+R_x(\tau)=E\{x(t)x^*(t+\tau)\}
+$$
+
+Covarianza:
+
+$$
+K_x(\tau)=R_x(\tau)-|\mu_x|^2
+$$
+
+Wiener-Khinchine:
+
+$$
+S_x(\omega)=\mathcal{F}\{R_x(\tau)\}
+$$
+
+$$
+R_x(\tau)=\mathcal{F}^{-1}\{S_x(\omega)\}
+$$
+
+Potencia desde PSD:
+
+$$
+P_x=
+\frac{1}{2\pi}
+\int_{-\infty}^{\infty}S_x(\omega)\,d\omega
+$$
+
+LTI:
+
+$$
+S_y(\omega)=|H(\omega)|^2S_x(\omega)
+$$
+
+AWGN:
+
+$$
+y(t)=x(t)+n(t)
+$$
+
+DSB-SC:
+
+$$
+s(t)=A_cm(t)\cos(\omega_ct)
+$$
+
+AM:
+
+$$
+s(t)=A_c[1+\mu m_n(t)]\cos(\omega_ct)
+$$
+
+PM:
+
+$$
+s_{PM}(t)=A_c\cos(\omega_ct+k_pm(t))
+$$
+
+Carson para PM:
+
+$$
+B_{Carson,PM}\approx 2(\beta+1)f_m
+$$
