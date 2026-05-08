@@ -264,7 +264,7 @@ Un proceso es WSS si cumple dos condiciones.
 Primera condición: media constante.
 
 ```math
-E\{x(t)\}=\mu_x=\text{constante}
+E\{x(t)\}=\mu_x=\mathrm{constante}
 ```
 
 Esto significa que el nivel promedio no depende del instante.
@@ -547,7 +547,7 @@ El intervalo de correlación define a partir de qué retardo la señal se consid
 con:
 
 ```math
-\beta \approx 0.05 \text{ a } 0.1
+\beta \approx 0.05 \; \mathrm{a} \; 0.1
 ```
 
 El tiempo efectivo de correlación resume el ancho de la autocorrelación:
@@ -786,11 +786,11 @@ R_n(\tau)=\frac{N_0}{2}\delta(\tau)
 PSD rectangular:
 
 ```math
-S_n(\omega)=
-\begin{cases}
-\dfrac{N_0}{2}, & |\omega|<B\\
-0, & \text{otro caso}
-\end{cases}
+S_n(\omega)=\frac{N_0}{2}, \quad |\omega|<B
+```
+
+```math
+S_n(\omega)=0, \quad |\omega|\geq B
 ```
 
 ACF correspondiente:
@@ -798,7 +798,7 @@ ACF correspondiente:
 ```math
 R_n(\tau)=
 \frac{N_0B}{2\pi}
-\operatorname{sinc}
+\mathrm{sinc}
 \left(
 \frac{B\tau}{\pi}
 \right)
@@ -807,7 +807,7 @@ R_n(\tau)=
 Aquí se usa:
 
 ```math
-\operatorname{sinc}(u)=\frac{\sin(\pi u)}{\pi u}
+\mathrm{sinc}(u)=\frac{\sin(\pi u)}{\pi u}
 ```
 
 Seno con fase aleatoria:
@@ -904,7 +904,7 @@ Para retardo discreto $k$, comparamos $x[n]$ con $x[n+k]$. Como la secuencia tie
 Estimador sesgado:
 
 ```math
-\hat{R}_{x,\text{sesgada}}[k]
+\hat{R}_{x,\mathrm{sesgada}}[k]
 =
 \frac{1}{N}
 \sum_{n=0}^{N-1-k}
@@ -914,7 +914,7 @@ x[n]x^*[n+k]
 Estimador no sesgado:
 
 ```math
-\hat{R}_{x,\text{no sesgada}}[k]
+\hat{R}_{x,\mathrm{no\ sesgada}}[k]
 =
 \frac{1}{N-k}
 \sum_{n=0}^{N-1-k}
@@ -1053,11 +1053,11 @@ Esa integral diverge porque el ancho de banda es infinito. Por tanto, el ruido b
 En un sistema real, el ancho de banda es finito:
 
 ```math
-S_n(\omega)=
-\begin{cases}
-\dfrac{N_0}{2}, & |\omega|<\Delta\omega\\
-0, & |\omega|\geq \Delta\omega
-\end{cases}
+S_n(\omega)=\frac{N_0}{2}, \quad |\omega|<\Delta\omega
+```
+
+```math
+S_n(\omega)=0, \quad |\omega|\geq \Delta\omega
 ```
 
 Su autocorrelación es:
@@ -1065,7 +1065,7 @@ Su autocorrelación es:
 ```math
 R_n(\tau)=
 \frac{N_0\Delta\omega}{2\pi}
-\operatorname{sinc}
+\mathrm{sinc}
 \left(
 \frac{\Delta\omega\tau}{\pi}
 \right)
@@ -1164,7 +1164,7 @@ SNR=10
 ```
 
 ```math
-SNR_{dB}=10\log_{10}(10)=10\text{ dB}
+SNR_{dB}=10\log_{10}(10)=10\,\mathrm{dB}
 ```
 
 ---
@@ -1273,21 +1273,21 @@ Un ruido blanco ideal tiene ACF delta, es decir, no tiene memoria. Al pasar por 
 Si $S_n(\omega)=N_0/2$ y:
 
 ```math
-H(\omega)=
-\begin{cases}
-1, & |\omega|<B\\
-0, & |\omega|\geq B
-\end{cases}
+H(\omega)=1, \quad |\omega|<B
+```
+
+```math
+H(\omega)=0, \quad |\omega|\geq B
 ```
 
 entonces:
 
 ```math
-S_y(\omega)=
-\begin{cases}
-\dfrac{N_0}{2}, & |\omega|<B\\
-0, & |\omega|\geq B
-\end{cases}
+S_y(\omega)=\frac{N_0}{2}, \quad |\omega|<B
+```
+
+```math
+S_y(\omega)=0, \quad |\omega|\geq B
 ```
 
 y:
@@ -1757,7 +1757,7 @@ n=1,2,3,\dots
 Teóricamente hay infinitas bandas laterales:
 
 ```math
-B_{WBPM,\text{teórico}}\to\infty
+B_{WBPM,\mathrm{teorico}}\to\infty
 ```
 
 En la práctica, las bandas muy lejanas tienen potencia muy pequeña y se ignoran.
@@ -1802,10 +1802,10 @@ Carson no da el ancho de banda matemático total. Da una banda útil que contien
 
 ## Mini-ejemplo
 
-Si $f_m=2\text{ kHz}$ y $\beta=0.2$, la señal puede tratarse como NBPM:
+Si $f_m=2\,\mathrm{kHz}$ y $\beta=0.2$, la señal puede tratarse como NBPM:
 
 ```math
-B_{NBPM}\approx2f_m=4\text{ kHz}
+B_{NBPM}\approx2f_m=4\,\mathrm{kHz}
 ```
 
 Si $\beta=4$, se usa Carson:
@@ -1815,7 +1815,7 @@ B_{Carson,PM}\approx2(\beta+1)f_m
 ```
 
 ```math
-B_{Carson,PM}\approx2(5)(2\text{ kHz})=20\text{ kHz}
+B_{Carson,PM}\approx2(5)(2\,\mathrm{kHz})=20\,\mathrm{kHz}
 ```
 
 ---
@@ -1920,7 +1920,7 @@ x_{RMS}=\sqrt{E\{x^2(t)\}}
 WSS:
 
 ```math
-E\{x(t)\}=\mu_x=\text{constante}
+E\{x(t)\}=\mu_x=\mathrm{constante}
 ```
 
 ```math
