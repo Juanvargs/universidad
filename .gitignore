@@ -1,0 +1,22 @@
+﻿# Sistema
+Thumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
