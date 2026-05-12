@@ -1,293 +1,284 @@
-# PRUEBA0_SPWM_L298N
+# Prueba de inversor SPWM con STM32G474RE y L298N
 
 **Autor:** Juan Pablo Vargas Córdoba  
-**Universidad:** Universidad Nacional de Colombia
+**Universidad:** Universidad Nacional de Colombia  
+**Proyecto:** Prueba de generación SPWM para control de puente H con módulo L298N
 
-Proyecto de prueba para generar una salida tipo inversor usando una STM32
-NUCLEO-G474RE y un modulo L298N. La STM32 genera las senales de control y el
-L298N actua como puente H de potencia para convertir una alimentacion DC en una
-salida alterna diferencial entre `OUT1` y `OUT2`.
+## Resumen
 
-Este proyecto se hizo como una prueba de laboratorio antes de pasar a un
-inversor real con driver y transistores de potencia dedicados.
+En este proyecto se implementó una prueba experimental de un inversor monofásico
+controlado mediante SPWM usando una tarjeta **STM32 NUCLEO-G474RE** y un módulo
+**L298N**. La STM32 genera tres señales de control: una señal SPWM de alta
+frecuencia para el pin `ENA` del L298N y dos señales digitales complementarias
+para los pines `IN1` e `IN2`. El L298N usa estas señales para conmutar su puente
+H interno y obtener una salida alterna diferencial entre `OUT1` y `OUT2`.
 
-## Objetivo
+La salida se verificó con un **Analog Discovery 2** usando WaveForms. Primero se
+midió la salida diferencial sin filtro físico, y luego se implementó un filtro
+LC en protoboard para reducir la componente de alta frecuencia de la SPWM y
+observar una forma de onda más cercana a una senoidal.
 
-El objetivo de esta prueba fue comprobar todo el camino de control y potencia:
+## Objetivos
 
-- Generar una senal SPWM desde la STM32.
-- Usar dos senales digitales para invertir la polaridad del puente H.
-- Controlar el modulo L298N con tres senales: `ENA`, `IN1` e `IN2`.
-- Verificar en el osciloscopio que el puente H entrega una salida bipolar.
-- Medir la salida real como `OUT1 - OUT2`.
-- Agregar un filtro LC fisico para suavizar la salida y observar una forma mas
-  senoidal.
+- Configurar la STM32G474RE para generar una señal SPWM por hardware usando
+  `TIM1_CH1`.
+- Controlar el puente A del L298N usando `ENA`, `IN1` e `IN2`.
+- Comprobar que el L298N invierte la polaridad de la salida mediante el puente H
+  interno.
+- Medir correctamente la salida diferencial del inversor como `OUT1 - OUT2`.
+- Implementar un filtro LC físico para suavizar la señal SPWM de salida.
+- Documentar el montaje, el código, las mediciones y el funcionamiento del
+  sistema.
 
 ## Componentes utilizados
 
 - STM32 NUCLEO-G474RE.
-- Modulo L298N.
-- Protoboard.
-- Jumpers.
+- Módulo L298N.
+- Protoboard y jumpers.
 - Fuente DC externa.
 - Analog Discovery 2 con WaveForms.
 - Resistencia de carga de `10 ohm / 10 W`.
 - Inductor de `270 uH`.
-- Capacitores electroliticos usados en pares espalda con espalda.
+- Capacitores electrolíticos conectados en pares espalda con espalda.
 
-## Idea general del inversor
+## Descripción general del sistema
 
-Un inversor toma una alimentacion DC y la conmuta mediante un puente H para
-obtener una salida alterna. En esta prueba, la alimentacion DC entra al L298N
-por su entrada de potencia y la salida alterna aparece entre `OUT1` y `OUT2`.
-
-La STM32 no entrega potencia a la carga. La STM32 solo entrega senales de
-control. La potencia sale de la fuente externa conectada al L298N.
-
-El funcionamiento conceptual es:
+El sistema se divide en tres bloques:
 
 ```text
- Fuente DC de potencia
+STM32 NUCLEO-G474RE  ->  L298N puente H  ->  Filtro LC y carga
+```
+
+La STM32 no entrega potencia a la carga. Su función es generar las señales de
+control. La potencia que recibe la carga proviene de la fuente externa conectada
+al L298N.
+
+```text
+Fuente DC de potencia
         |
         v
      L298N
-  puente H interno
+ puente H interno
         |
         v
   OUT1 - OUT2
- salida alterna
+ salida alterna diferencial
 ```
 
-Y el control es:
+Las señales de control usadas son:
 
 ```text
- STM32
-  |-- A5 / PC0 -> ENA -> PWM/SPWM
-  |-- D7 / PA8 -> IN1 -> polaridad
-  |-- D8 / PA9 -> IN2 -> polaridad inversa
+A5 / PC0 -> ENA -> SPWM
+D7 / PA8 -> IN1 -> selección de polaridad
+D8 / PA9 -> IN2 -> selección de polaridad complementaria
 ```
 
-## Pines usados
+## Conexiones principales
 
-### STM32 NUCLEO-G474RE
+### Pines usados en la STM32
 
-| Pin fisico Nucleo | Pin MCU | Funcion en el proyecto |
+| Pin físico Nucleo | Pin MCU | Función |
 | --- | --- | --- |
-| `A5` | `PC0` | Salida PWM/SPWM hacia `ENA` del L298N |
-| `D7` | `PA8` | Entrada `IN1` del L298N |
-| `D8` | `PA9` | Entrada `IN2` del L298N |
-| `GND` | GND | Tierra comun con el L298N y el Analog Discovery |
-| `5V` | 5 V USB/Nucleo | Alimentacion logica del modulo L298N durante la prueba |
+| `A5` | `PC0` | Señal SPWM hacia `ENA` del L298N |
+| `D7` | `PA8` | Señal digital hacia `IN1` |
+| `D8` | `PA9` | Señal digital hacia `IN2` |
+| `GND` | GND | Tierra común del sistema |
+| `5V` | 5 V | Alimentación lógica del módulo L298N durante la prueba |
 
-### Modulo L298N
+### Pines usados en el L298N
 
-| Pin del L298N | Conexion usada | Funcion |
+| Pin del L298N | Conexión | Función |
 | --- | --- | --- |
-| `A Enable` / `ENA` | `A5 / PC0` | Habilita el puente A con PWM/SPWM |
+| `A Enable` / `ENA` | `A5 / PC0` | Habilita el puente A mediante SPWM |
 | `IN1` | `D7 / PA8` | Selecciona una polaridad del puente |
 | `IN2` | `D8 / PA9` | Selecciona la polaridad contraria |
-| `OUT1` | Salida hacia carga/filtro | Nodo de salida del puente A |
-| `OUT2` | Salida hacia carga/filtro | Nodo complementario de salida del puente A |
-| `+5V Power` | 5 V de la STM32 en la prueba | Alimentacion logica del modulo |
-| `Power GND` | GND comun | Referencia comun |
-| `+12V Power` | Fuente externa de potencia | Entrada DC del puente H. En pruebas se uso 5 V |
+| `OUT1` | Carga/filtro | Salida del puente A |
+| `OUT2` | Carga/filtro | Salida complementaria del puente A |
+| `+5V Power` | `5V` de la STM32 | Alimentación lógica del módulo |
+| `Power GND` | GND común | Referencia común |
+| `+12V Power` | Fuente externa | Entrada de potencia del puente H |
 
-La siguiente imagen muestra la distribucion de pines del modulo L298N usado en
-la prueba. En este proyecto se uso solamente el bloque `Output A`, junto con
-`A Enable`, `IN1` e `IN2`.
+La imagen siguiente muestra la distribución de pines del módulo L298N utilizado.
+En el proyecto se empleó solamente el puente A, es decir, `A Enable`, `IN1`,
+`IN2`, `OUT1` y `OUT2`.
 
-![Modulo L298N usado en la prueba](Imagenes/L298N.png)
+![Módulo L298N usado en la prueba](Imagenes/L298N.png)
 
-Para que la STM32 pudiera controlar el pin `A Enable`, se retiro el jumper de
-`A Enable`. Si ese jumper queda puesto, el modulo deja `ENA` fijo en alto y la
-STM32 ya no controla el PWM de habilitacion.
+Para que la STM32 pueda controlar `ENA`, se retiró el jumper de `A Enable`. Si
+ese jumper queda instalado, el módulo mantiene `ENA` fijo en alto y la STM32 no
+puede aplicar la SPWM sobre el pin de habilitación.
 
-## Alimentacion del L298N
+## Alimentación del L298N
 
-El L298N tiene dos alimentaciones conceptuales diferentes:
+El L298N requiere dos alimentaciones conceptualmente diferentes:
 
-1. Alimentacion logica (`VSS`):
-   - Alimenta la parte interna de control del L298N.
-   - En el modulo aparece como `+5V Power`.
-   - En esta prueba se alimento desde el pin `5V` de la STM32/Nucleo.
-   - Esta alimentacion no es la que mueve la carga; solo permite que el
-     integrado entienda las senales `ENA`, `IN1` e `IN2`.
+1. **Alimentación lógica (`VSS`)**
 
-2. Alimentacion de potencia (`VS`):
-   - Es la energia que el puente H entrega a la carga.
-   - En el modulo aparece como `+12V Power`.
-   - El nombre `+12V` es el nombre del borne del modulo, pero durante las
-     pruebas se uso una fuente menor, por ejemplo `5 V`, para no forzar la
-     resistencia ni el L298N.
-   - Esta alimentacion si es la que aparece conmutada en `OUT1` y `OUT2`.
+   Alimenta la electrónica interna de control del L298N. En el módulo aparece
+   como `+5V Power`. En esta prueba se alimentó desde el pin `5V` de la Nucleo.
+   Esta alimentación no mueve la carga; solo permite que el integrado interprete
+   las señales `ENA`, `IN1` e `IN2`.
 
-En otras palabras, durante la prueba hubo dos "5 V" con funciones diferentes:
+2. **Alimentación de potencia (`VS`)**
+
+   Es la alimentación que el puente H conmuta hacia la carga. En el módulo
+   aparece como `+12V Power`. Aunque el borne se llame `+12V`, durante la prueba
+   se usó una fuente de `5 V` para reducir corriente y calentamiento.
+
+Durante el montaje hubo dos tensiones de `5 V` con funciones distintas:
 
 ```text
-5 V de la STM32  -> alimenta la logica del L298N
-5 V de la fuente -> alimenta la parte de potencia del puente H
+5 V de la STM32  -> alimentación lógica del L298N
+5 V de la fuente -> alimentación de potencia del puente H
 ```
 
-El `5 V` de la fuente externa se conecto al borne llamado `+12V Power` porque
-ese borne es la entrada de potencia del modulo. No significa que siempre tenga
-que ser exactamente `12 V`; en esta prueba se bajo a `5 V` para trabajar con
-menos corriente y menos calentamiento.
-
-La conexion de tierra es obligatoria:
+Todas las partes del sistema deben compartir la misma referencia:
 
 ```text
 GND STM32 ---- GND protoboard ---- Power GND L298N ---- GND Analog Discovery
 ```
 
-Sin tierra comun, el L298N no puede interpretar correctamente las senales de la
-STM32.
+## Fundamento de la SPWM
 
-## Que hace cada senal
+La SPWM, o modulación sinusoidal por ancho de pulso, consiste en generar pulsos
+de amplitud fija pero con ancho variable. La altura instantánea del pulso la
+determina la alimentación de potencia del puente H; lo que cambia es el tiempo
+que ese pulso permanece encendido.
 
-Para entender el control del L298N, conviene separar dos ideas:
-
-1. **La direccion de la corriente por la carga.**
-2. **La cantidad de tiempo que se deja pasar energia.**
-
-En nuestro montaje esas dos cosas no las hace una sola senal. Las hace un grupo
-de tres senales:
+Para una frecuencia PWM de `20 kHz`, el periodo de cada pulso es:
 
 ```text
-A5 / PC0 -> ENA -> decide cuando el puente conduce
-D7 / PA8 -> IN1 -> ayuda a decidir el sentido de conduccion
-D8 / PA9 -> IN2 -> ayuda a decidir el sentido contrario
+T_PWM = 1 / 20000 = 50 us
 ```
 
-Una forma sencilla de verlo es esta:
+Si el duty cycle es `80%`, la salida permanece activa durante:
 
 ```text
-IN1 e IN2 dicen: "hacia que lado va la corriente".
-ENA dice: "durante cuanto tiempo dejo pasar esa corriente".
+t_on = 50 us * 0.80 = 40 us
 ```
 
-Otra forma de pensarlo es como un interruptor con direccion:
+y apagada durante:
 
 ```text
-IN1/IN2 escogen el camino interno del puente.
-ENA abre y cierra ese camino muchas veces por segundo.
+t_off = 50 us * 0.20 = 10 us
 ```
 
-Si `IN1/IN2` escogen el camino positivo y `ENA` esta alto, la carga recibe un
-pulso positivo. Si `IN1/IN2` escogen el camino negativo y `ENA` esta alto, la
-carga recibe un pulso negativo.
-
-### A5 / PC0 -> ENA
-
-`A5` corresponde al pin `PC0` de la STM32. En CubeMX se configuro como
-`TIM1_CH1`, por eso puede sacar PWM por hardware.
-
-Esta senal va al pin `ENA` del L298N. `ENA` significa "Enable A", es decir,
-habilitacion del puente A.
-
-`ENA` no escoge el sentido de giro ni la polaridad. `ENA` solo permite o bloquea
-la conduccion del puente A:
+Si la alimentación de potencia ideal es `5 V`, el promedio ideal durante ese
+periodo PWM es:
 
 ```text
-ENA = 1 -> el puente A queda habilitado y puede entregar energia
-ENA = 0 -> el puente A queda apagado y no entrega energia
+V_promedio = Vdc * duty
+V_promedio = 5 V * 0.80 = 4 V
 ```
 
-En este proyecto `ENA` no se deja fijo. En `ENA` entra el PWM/SPWM. Eso hace que
-el puente se encienda y se apague muchas veces por segundo.
+Esto no significa que el pulso tenga una altura de `4 V`. El pulso sigue
+intentando llegar a la tensión de la fuente de potencia. Lo que equivale a
+`4 V` es el valor promedio durante el periodo PWM.
 
-Cuando el pulso de `ENA` esta alto, el L298N conecta la fuente DC a la carga en
-el sentido que indiquen `IN1` e `IN2`. Cuando el pulso de `ENA` esta bajo, el
-puente deja de entregar energia.
-
-Por eso `ENA` controla la energia promedio que recibe la carga. Si el duty es
-alto, pasa mas energia. Si el duty es bajo, pasa menos energia.
+En el puente H, el signo del promedio depende de la polaridad seleccionada por
+`IN1` e `IN2`:
 
 ```text
-Duty alto  -> mas tiempo conduciendo -> mas energia promedio
-Duty bajo  -> menos tiempo conduciendo -> menos energia promedio
+Vout_promedio = polaridad * Vdc * duty
+```
+
+donde:
+
+```text
+polaridad = +1 cuando IN1 = 1 e IN2 = 0
+polaridad = -1 cuando IN1 = 0 e IN2 = 1
+```
+
+Por lo tanto, la SPWM no genera directamente una senoidal pura. Genera pulsos
+rápidos cuyo valor promedio sigue una forma senoidal. El filtro LC se encarga de
+atenuar la componente de alta frecuencia y dejar visible la componente de baja
+frecuencia.
+
+## Función de cada señal
+
+Para entender el control del puente H es necesario separar dos funciones:
+
+- `IN1` e `IN2` definen el sentido de la corriente por la carga.
+- `ENA` define durante cuánto tiempo se deja pasar energía en ese sentido.
+
+```text
+IN1 e IN2 -> eligen la polaridad de la salida
+ENA       -> habilita o deshabilita esa polaridad con SPWM
+```
+
+### Señal `A5 / PC0 -> ENA`
+
+`A5` corresponde al pin `PC0` de la STM32. En CubeMX fue configurado como
+`TIM1_CH1`, por lo que puede generar PWM por hardware.
+
+Esta señal entra al pin `ENA` del L298N. `ENA` significa "Enable A", es decir,
+habilitación del puente A.
+
+```text
+ENA = 1 -> el puente A puede conducir
+ENA = 0 -> el puente A queda deshabilitado
+```
+
+En este proyecto `ENA` recibe la señal SPWM. Por eso el puente H se enciende y
+se apaga muchas veces por segundo. Cuando `ENA` está en alto, la fuente DC se
+aplica a la carga con la polaridad definida por `IN1` e `IN2`. Cuando `ENA` está
+en bajo, el puente deja de entregar energía.
+
+En resumen:
+
+```text
+A5 / PC0 / ENA = señal rápida SPWM que regula la energía promedio entregada.
+```
+
+### Señal `D7 / PA8 -> IN1`
+
+`D7` corresponde al pin `PA8` de la STM32. Esta señal entra a `IN1` del L298N.
+
+`IN1` no es la SPWM. Es una señal de dirección. Trabaja junto con `IN2` para
+seleccionar qué par diagonal del puente H conduce.
+
+En el código, `IN1` cambia cada `10 ms`:
+
+```text
+Primeros 10 ms   -> IN1 = 1
+Siguientes 10 ms -> IN1 = 0
+```
+
+Como un periodo completo dura `20 ms`, la frecuencia fundamental de salida es:
+
+```text
+f = 1 / 20 ms = 50 Hz
 ```
 
 En resumen:
 
 ```text
-A5 / PC0 / ENA = senal rapida PWM/SPWM que regula la energia entregada.
+D7 / PA8 / IN1 = señal lenta que participa en la selección de polaridad.
 ```
 
+### Señal `D8 / PA9 -> IN2`
 
-### D7 / PA8 -> IN1
+`D8` corresponde al pin `PA9` de la STM32. Esta señal entra a `IN2` del L298N.
 
-`D7` corresponde al pin `PA8` de la STM32. Esta senal va a `IN1` del L298N.
-
-`IN1` no es la senal SPWM. `IN1` es una senal de direccion. Trabaja junto con
-`IN2` para decirle al puente H que par interno debe conducir.
-
-En nuestro codigo, `IN1` cambia cada `10 ms`. Eso significa que permanece un
-medio ciclo en un estado y luego cambia al otro medio ciclo.
+`IN2` es complementaria a `IN1`:
 
 ```text
-Primeros 10 ms: IN1 = 1
-Siguientes 10 ms: IN1 = 0
+Si IN1 = 1, entonces IN2 = 0
+Si IN1 = 0, entonces IN2 = 1
 ```
 
-Como `20 ms` equivalen a un periodo completo, la salida fundamental queda cerca
-de:
-
-```text
-1 / 20 ms = 50 Hz
-```
+Esta complementariedad permite que el puente H entregue primero una polaridad y
+luego la polaridad opuesta.
 
 En resumen:
 
 ```text
-D7 / PA8 / IN1 = senal lenta que selecciona una mitad del puente H.
+D8 / PA9 / IN2 = señal lenta complementaria a IN1.
 ```
 
-Esta senal no se ve como PWM rapido. Se ve como una cuadrada lenta porque solo
-cambia para pasar de un semiciclo al otro.
+### Operación conjunta
 
-### D8 / PA9 -> IN2
-
-`D8` corresponde al pin `PA9` de la STM32. Esta senal va a `IN2` del L298N.
-
-`IN2` tambien es una senal de direccion, pero funciona invertida respecto a
-`IN1`.
-
-Cuando `IN1` esta en alto, `IN2` esta en bajo:
-
-```text
-IN1 = 1
-IN2 = 0
-```
-
-Cuando `IN1` esta en bajo, `IN2` esta en alto:
-
-```text
-IN1 = 0
-IN2 = 1
-```
-
-Esto es lo que permite invertir la polaridad entre `OUT1` y `OUT2`.
-
-En resumen:
-
-```text
-D8 / PA9 / IN2 = senal lenta complementaria a IN1.
-```
-
-Si `D7` esta alto, `D8` esta bajo. Si `D7` esta bajo, `D8` esta alto. Esa
-complementariedad es la que hace que el puente entregue primero una polaridad y
-luego la polaridad contraria.
-
-### Las tres senales trabajando juntas
-
-El punto clave es que el L298N no recibe una sola senal. Recibe tres ordenes:
-
-```text
-IN1 e IN2 -> sentido de la salida
-ENA       -> pulsos de energia en ese sentido
-```
-
-Durante el primer medio ciclo:
+Durante el primer semiciclo:
 
 ```text
 IN1 = 1
@@ -295,10 +286,10 @@ IN2 = 0
 ENA = SPWM
 ```
 
-La salida entre `OUT1` y `OUT2` queda con una polaridad. Durante los pulsos altos
-de `ENA`, la carga recibe energia en ese sentido.
+El puente queda configurado para una polaridad. Cada vez que `ENA` está en alto,
+la carga recibe un pulso de esa polaridad.
 
-Durante el segundo medio ciclo:
+Durante el segundo semiciclo:
 
 ```text
 IN1 = 0
@@ -306,101 +297,62 @@ IN2 = 1
 ENA = SPWM
 ```
 
-La salida entre `OUT1` y `OUT2` queda con la polaridad contraria. Durante los
-pulsos altos de `ENA`, la carga recibe energia en el sentido opuesto.
+El puente queda configurado con la polaridad contraria. Cada vez que `ENA` está
+en alto, la carga recibe un pulso de signo opuesto.
 
-Asi se obtiene una salida alterna:
-
-```text
-Medio ciclo positivo -> pulsos SPWM positivos
-Medio ciclo negativo -> pulsos SPWM negativos
-```
-
-Resumen de los estados principales:
-
-| Tiempo | IN1 / D7 | IN2 / D8 | ENA / A5 | Efecto en la salida |
+| Intervalo | IN1 / D7 | IN2 / D8 | ENA / A5 | Efecto sobre `OUT1 - OUT2` |
 | --- | --- | --- | --- | --- |
 | Primeros `10 ms` | Alto | Bajo | SPWM | Pulsos de una polaridad |
 | Siguientes `10 ms` | Bajo | Alto | SPWM | Pulsos de polaridad contraria |
 
-La suma de los dos semiciclos da un periodo de `20 ms`, equivalente a `50 Hz`.
+## Funcionamiento del puente H en el L298N
 
-## Como invierte la senal el L298N
-
-El L298N tiene un puente H interno. Un puente H permite aplicar la fuente DC a
-una carga en dos sentidos distintos.
-
-El diagrama de bloques del datasheet muestra dos puentes internos: puente `A`
-para `OUT1/OUT2` y puente `B` para `OUT3/OUT4`. En este proyecto se uso solo el
-puente `A`, controlado por `IN1`, `IN2` y `ENA`.
+El L298N contiene dos puentes H internos. En esta prueba se utilizó el puente A,
+formado por `IN1`, `IN2`, `ENA`, `OUT1` y `OUT2`.
 
 ![Diagrama de bloques interno del L298N](Imagenes/Diagrama_de_bloques_L298N.png)
 
-Si el puente conecta la fuente de esta forma:
+En un puente H, la carga se conecta entre dos nodos de salida. La inversión de
+polaridad se logra activando pares diagonales de transistores.
+
+Para una polaridad:
 
 ```text
-OUT1 = +V
-OUT2 = 0 V
++Vdc -> transistor superior izquierdo -> OUT1 -> carga -> OUT2
+     -> transistor inferior derecho -> GND
 ```
 
-la carga ve:
+Para la polaridad contraria:
 
 ```text
-OUT1 - OUT2 = +V
++Vdc -> transistor superior derecho -> OUT2 -> carga -> OUT1
+     -> transistor inferior izquierdo -> GND
 ```
 
-Si el puente invierte las conexiones internas:
+Así, la corriente atraviesa la carga en un sentido durante un semiciclo y en el
+sentido contrario durante el siguiente semiciclo.
+
+La STM32 no controla directamente cada transistor interno. La STM32 entrega las
+órdenes lógicas:
 
 ```text
-OUT1 = 0 V
-OUT2 = +V
+IN1/IN2 -> seleccionan el par diagonal
+ENA     -> habilita ese par con pulsos SPWM
 ```
 
-la carga ve:
+## Salida diferencial `OUT1 - OUT2`
 
-```text
-OUT1 - OUT2 = -V
-```
-
-Ese cambio de `+V` a `-V` es la inversion de polaridad. En nuestro proyecto,
-esa inversion ocurre cada `10 ms` porque `IN1` e `IN2` se intercambian cada
-medio ciclo.
-
-El L298N hace internamente la seleccion de transistores. La STM32 no prende
-directamente cada transistor del puente. La STM32 solo manda estas ordenes:
-
-```text
-IN1/IN2 -> que par debe conducir
-ENA     -> cuando debe conducir ese par
-```
-
-Por eso para esta prueba no se programo dead time externo: no se estan manejando
-directamente las compuertas de MOSFETs discretos. El L298N recibe senales
-logicas y hace la conmutacion interna.
-
-## Por que OUT1 y OUT2 por separado no muestran voltaje negativo
-
-Esta fue una de las partes mas importantes de la medicion.
-
-Cuando se mide `OUT1` contra GND, se ve solamente el voltaje de `OUT1` respecto
-a tierra. Cuando se mide `OUT2` contra GND, se ve solamente el voltaje de
-`OUT2` respecto a tierra. Cada una de esas salidas normalmente se mueve entre:
-
-```text
-0 V y +V de la fuente
-```
-
-Por eso en el osciloscopio, mirando cada canal por separado, no aparece una
-senal negativa clara.
-
-La carga no esta conectada de `OUT1` a GND ni de `OUT2` a GND. La carga esta
-conectada entre `OUT1` y `OUT2`.
-
-Entonces la salida real es diferencial:
+La salida útil del puente H no se mide como `OUT1` contra GND ni como `OUT2`
+contra GND. La carga está conectada entre `OUT1` y `OUT2`, por lo que la tensión
+real sobre la carga es:
 
 ```text
 Vout = OUT1 - OUT2
 ```
+
+Si se mide cada salida por separado respecto a GND, ambas señales se mueven
+entre `0 V` y la tensión de la fuente de potencia. Por eso no se observa una
+señal negativa clara en cada canal individual.
 
 Ejemplo:
 
@@ -418,7 +370,7 @@ OUT2 = +5 V
 Vout = OUT1 - OUT2 = -5 V
 ```
 
-Por eso en WaveForms se uso:
+Por esta razón, en WaveForms se utilizó:
 
 ```text
 CH1 -> OUT1
@@ -426,29 +378,29 @@ CH2 -> OUT2
 Math 1 = C1 - C2
 ```
 
-`Math 1` es la tension que realmente ve la carga.
+`Math 1` representa la tensión que realmente recibe la carga.
 
-## Diseno del codigo
+## Diseño del código
 
-El codigo propio del proyecto esta principalmente en:
+El código propio del proyecto se encuentra principalmente en:
 
 - `Core/Src/main.c`
 - `Core/Src/l298n_spwm.c`
 - `Core/Inc/l298n_spwm.h`
 
-Los archivos generados por CubeMX configuran reloj, GPIO, TIM1 y BSP de la
-tarjeta Nucleo.
+Los demás archivos corresponden principalmente a inicialización generada por
+STM32CubeMX: reloj, GPIO, TIM1, BSP de la Nucleo y archivos HAL/CMSIS.
 
-### main.c
+### Archivo `main.c`
 
-En `main.c` se inicializan los perifericos generados por CubeMX:
+En `main.c` se inicializan los periféricos:
 
 ```c
 MX_GPIO_Init();
 MX_TIM1_Init();
 ```
 
-Luego se inicializa el modulo de control del L298N:
+Luego se inicializa y arranca el módulo de control SPWM:
 
 ```c
 L298N_SPWM_Init();
@@ -456,28 +408,27 @@ L298N_SPWM_SetModulation(L298N_MODULACION_SPWM);
 L298N_SPWM_Start();
 ```
 
-La modulacion se define asi:
+La modulación se definió como:
 
 ```c
 #define L298N_MODULACION_SPWM       800U
 ```
 
-`800U` significa `80%` de la amplitud maxima de la tabla SPWM.
+Esto equivale a una modulación del `80%`.
 
-Dentro del ciclo infinito se llama:
+Dentro del ciclo infinito se ejecuta:
 
 ```c
 L298N_SPWM_Task();
 ```
 
-Esta funcion actualiza periodicamente el duty del PWM y cambia la polaridad del
-puente cada `10 ms`.
+Esta función actualiza el duty de la SPWM y cambia la polaridad cada `10 ms`.
 
-### l298n_spwm.c
+### Archivo `l298n_spwm.c`
 
-Este archivo contiene la logica de generacion SPWM.
+Este archivo contiene la lógica de generación SPWM.
 
-Parametros principales:
+Parámetros principales:
 
 ```c
 #define L298N_PWM_TIMER              htim1
@@ -489,105 +440,83 @@ Parametros principales:
 #define L298N_DEFAULT_MODULATION     800U
 ```
 
-Interpretacion:
+Interpretación:
 
 - `TIM1_CH1` genera el PWM en `PC0/A5`.
-- La tabla tiene `100` muestras.
+- La tabla SPWM contiene `100` muestras.
 - Cada muestra dura `200 us`.
 - `100 * 200 us = 20000 us = 20 ms`.
-- Un periodo de `20 ms` corresponde a `50 Hz`.
+- Un periodo de `20 ms` equivale a `50 Hz`.
 - Cada `10 ms` se invierte la polaridad del puente.
 
-La tabla `spwm_abs_sine_table` contiene una senal senoidal absoluta entre `0` y
-`1000`. Se usa absoluta porque la parte positiva y negativa no se generan con
-valores negativos en el PWM. La polaridad la hacen `IN1` e `IN2`.
+La tabla `spwm_abs_sine_table` contiene valores entre `0` y `1000`. Se usa una
+tabla senoidal absoluta porque el PWM no maneja valores negativos. El signo de
+la salida lo determinan `IN1` e `IN2`.
 
-La funcion `SetBridgePolarity()` controla la direccion:
+La función `SetBridgePolarity()` establece la polaridad:
 
 ```c
 1U -> IN1 alto, IN2 bajo
 0U -> IN1 bajo, IN2 alto
 ```
 
-La funcion `SetDutyPermille()` escribe el duty en el canal PWM de TIM1:
+La función `SetDutyPermille()` actualiza el registro de comparación del timer:
 
 ```c
 __HAL_TIM_SET_COMPARE(...)
 ```
 
-La funcion `L298N_SPWM_Task()` hace el trabajo repetitivo:
+La tarea `L298N_SPWM_Task()` realiza el proceso repetitivo:
 
-1. Calcula el tiempo actual.
-2. Ubica ese tiempo dentro del periodo de `20 ms`.
+1. Lee el tiempo actual.
+2. Calcula la posición dentro del periodo de `20 ms`.
 3. Selecciona la muestra correspondiente de la tabla.
-4. Cambia la polaridad si se pasa de los primeros `10 ms`.
-5. Aplica el duty correspondiente al PWM de `ENA`.
+4. Invierte `IN1/IN2` si se llega al siguiente semiciclo.
+5. Aplica el nuevo duty al PWM de `ENA`.
 
-## Configuracion de frecuencias
+## Medición con Analog Discovery 2
 
-El PWM de `ENA` se configuro alrededor de `20 kHz`. Esta frecuencia es la
-portadora. La salida fundamental del inversor es de `50 Hz`.
-
-La relacion conceptual es:
+La medición se realizó conectando:
 
 ```text
-20 kHz -> frecuencia rapida de conmutacion PWM/SPWM
-50 Hz  -> frecuencia lenta de salida alterna
-```
-
-Por eso en el osciloscopio no siempre se ven bonitas al mismo tiempo. Para ver
-la salida del inversor se uso `OUT1 - OUT2`; para ver la componente suavizada se
-uso filtro digital y despues filtro LC fisico.
-
-## Medicion con Analog Discovery 2
-
-Conexion usada:
-
-```text
-AD2 GND -> GND comun
+AD2 GND -> GND común
 CH1 1+  -> OUT1
 CH2 2+  -> OUT2
 ```
 
-En WaveForms:
+En WaveForms se creó:
 
 ```text
 Math 1 = C1 - C2
 ```
 
-`Math 1` representa la tension real sobre la carga.
-
-Despues se agrego un filtro digital:
+Después se agregó un filtro digital:
 
 ```text
 Math 2 = filtro low-pass de Math 1
 ```
 
-El filtro digital no cambia el circuito fisico. Solo ayuda a visualizar la
-componente de baja frecuencia.
-
-## Capturas de medicion
+El filtro digital solo se utilizó para visualizar mejor la componente de baja
+frecuencia. No modifica el circuito físico.
 
 ### Salida diferencial con filtro digital, sin filtro LC real
 
-Esta captura corresponde a la salida del puente observada como `C1 - C2`, usando
-filtro digital en WaveForms pero sin el filtro LC fisico montado en la salida.
+La siguiente captura muestra la salida diferencial `OUT1 - OUT2` con ayuda de
+un filtro digital en WaveForms, antes de montar el filtro LC físico.
 
 ![Salida con filtro digital sin filtro LC real](Imagenes/PRUEBA1_CON_FILTRO.png)
 
-### Salida con filtro LC fisico y filtro digital
+### Salida con filtro LC físico y filtro digital
 
-Esta captura corresponde a la salida despues de implementar el filtro LC real en
-la protoboard. La senal naranja es la salida medida y la azul es la version
-filtrada digitalmente en WaveForms.
+La siguiente captura muestra la salida después de implementar el filtro LC en la
+protoboard. La señal medida ya presenta menor contenido de conmutación, y la
+versión filtrada digitalmente permite observar mejor la componente senoidal.
 
 ![Salida con filtro LC real](Imagenes/PRUEBA1_CON_FILTRO_DOS.png)
 
-## Filtro LC fisico implementado
+## Filtro LC físico implementado
 
-El filtro se monto en la salida diferencial del puente H.
-
-Conexion:
+El filtro LC se conectó en la salida diferencial del puente H:
 
 ```text
 OUT1 ---- L 270 uH ---- nodo filtrado ---- carga 10 ohm ---- OUT2
@@ -597,38 +526,34 @@ OUT1 ---- L 270 uH ---- nodo filtrado ---- carga 10 ohm ---- OUT2
                             OUT2
 ```
 
-Es decir:
+El inductor se conectó en serie desde `OUT1`. La resistencia de carga y el
+capacitor equivalente se conectaron entre el nodo filtrado y `OUT2`.
 
-- El inductor va en serie desde `OUT1`.
-- La resistencia de carga va entre el nodo filtrado y `OUT2`.
-- El capacitor equivalente va en paralelo con la carga.
-
-La version final probada fue:
+La configuración final de prueba fue:
 
 ```text
 L = 270 uH
 Carga = 10 ohm / 10 W
 C = 47 uF + 47 uF en serie espalda con espalda
 Ceq aproximado = 23.5 uF
+Fuente de potencia = 5 V
 ```
 
-Como los capacitores disponibles eran electroliticos polarizados, se conectaron
-dos iguales en serie espalda con espalda para formar un capacitor equivalente no
-polarizado.
-
-Conexion de los dos electroliticos:
+Como los capacitores disponibles eran electrolíticos polarizados, se usaron dos
+capacitores iguales en serie espalda con espalda para obtener un capacitor
+equivalente no polarizado:
 
 ```text
 nodo filtrado ---- +| |- ---- -| |+ ---- OUT2
 ```
 
-La capacitancia equivalente de dos capacitores iguales en serie es:
+Para dos capacitores iguales en serie:
 
 ```text
 Ceq = C / 2
 ```
 
-Para dos capacitores de `47 uF`:
+Por lo tanto, para dos capacitores de `47 uF`:
 
 ```text
 Ceq = 47 uF / 2 = 23.5 uF
@@ -640,84 +565,42 @@ La frecuencia de corte aproximada del filtro LC es:
 fc = 1 / (2*pi*sqrt(L*C))
 ```
 
-Con:
-
-```text
-L = 270 uH
-C = 23.5 uF
-```
-
-se obtiene aproximadamente:
+Con `L = 270 uH` y `C = 23.5 uF`, se obtiene aproximadamente:
 
 ```text
 fc ~= 2.0 kHz
 ```
 
-Esta frecuencia deja pasar la componente de `50 Hz` y atenua parte importante
-del PWM de `20 kHz`.
+Esta frecuencia permite conservar la componente de `50 Hz` y atenuar parte de la
+portadora PWM de aproximadamente `20 kHz`.
 
-## Funcion del filtro
+## Resultados
 
-La salida del puente H con SPWM no es una senoidal pura. Es una senal bipolar
-compuesta por pulsos rapidos. El filtro LC se usa para reducir la componente de
-alta frecuencia y conservar la componente de baja frecuencia.
+Con la configuración implementada se verificó que:
 
-Antes del filtro:
+- La STM32 genera la señal SPWM en `PC0/A5`.
+- `PA8/D7` y `PA9/D8` cambian de estado de forma complementaria cada `10 ms`.
+- El L298N invierte la polaridad entre `OUT1` y `OUT2`.
+- La salida útil debe medirse como `OUT1 - OUT2`.
+- Sin filtro LC, la salida se observa como una señal bipolar compuesta por
+  pulsos SPWM.
+- Con el filtro LC, la salida presenta una forma más suave y cercana a una
+  senoidal.
 
-```text
-salida = pulsos SPWM positivos y negativos
-```
+## Conclusiones
 
-Despues del filtro:
+La prueba permitió comprobar experimentalmente el principio de operación de un
+inversor controlado por SPWM. El pin `ENA` del L298N recibe una señal PWM de
+ancho variable, mientras que `IN1` e `IN2` determinan la polaridad de la salida.
+De esta forma, el puente H entrega pulsos positivos durante un semiciclo y
+pulsos negativos durante el semiciclo contrario.
 
-```text
-salida = forma mas suave, cercana a una senoidal
-```
+La medición diferencial `OUT1 - OUT2` fue esencial para observar la salida real
+aplicada a la carga. Además, la implementación del filtro LC permitió reducir la
+componente de alta frecuencia asociada a la conmutación y visualizar una forma
+de onda más senoidal.
 
-El inductor se opone a cambios rapidos de corriente y el capacitor ofrece un
-camino para las componentes rapidas de tension. Juntos atenuan la portadora
-PWM y dejan visible la componente de 50 Hz.
-
-## Carga utilizada
-
-La carga usada fue:
-
-```text
-10 ohm / 10 W
-```
-
-Con `5 V`, la corriente ideal aproximada seria:
-
-```text
-I = V / R = 5 / 10 = 0.5 A
-```
-
-La potencia ideal aproximada seria:
-
-```text
-P = V^2 / R = 25 / 10 = 2.5 W
-```
-
-En la practica, el L298N tiene caida interna, por lo que la tension real sobre
-la carga puede ser menor. El L298N puede calentarse porque no es un driver
-eficiente para potencia alta.
-
-## Estado actual
-
-El proyecto quedo en modo normal SPWM:
-
-- `PC0/A5` genera PWM/SPWM hacia `ENA`.
-- `PA8/D7` y `PA9/D8` invierten la polaridad cada `10 ms`.
-- La salida real se mide como `OUT1 - OUT2`.
-- El filtro LC fisico con `270 uH` y `47 uF + 47 uF` suaviza la salida.
-
-La configuracion final probada para visualizar la senoidal fue:
-
-```text
-Fuente de potencia: 5 V
-Carga: 10 ohm / 10 W
-Inductor: 270 uH
-Capacitores: 47 uF + 47 uF espalda con espalda
-Medicion: Math 1 = C1 - C2
-Filtro digital opcional: Math 2 = low-pass de Math 1
-```
+El montaje con L298N es adecuado como demostración didáctica del control SPWM y
+del funcionamiento de un puente H. Para una etapa de potencia definitiva sería
+necesario utilizar un driver y dispositivos de conmutación diseñados para mayor
+eficiencia y capacidad de corriente.
