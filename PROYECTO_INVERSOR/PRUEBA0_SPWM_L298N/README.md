@@ -1,5 +1,8 @@
 # PRUEBA0_SPWM_L298N
 
+**Autor:** Juan Pablo Vargas Córdoba  
+**Universidad:** Universidad Nacional de Colombia
+
 Proyecto de prueba para generar una salida tipo inversor usando una STM32
 NUCLEO-G474RE y un modulo L298N. La STM32 genera las senales de control y el
 L298N actua como puente H de potencia para convertir una alimentacion DC en una
@@ -89,6 +92,16 @@ Y el control es:
 | `Power GND` | GND comun | Referencia comun |
 | `+12V Power` | Fuente externa de potencia | Entrada DC del puente H. En pruebas se uso 5 V |
 
+La siguiente imagen muestra la distribucion de pines del modulo L298N usado en
+la prueba. En este proyecto se uso solamente el bloque `Output A`, junto con
+`A Enable`, `IN1` e `IN2`.
+
+![Modulo L298N usado en la prueba](Imagenes/L298N.png)
+
+Para que la STM32 pudiera controlar el pin `A Enable`, se retiro el jumper de
+`A Enable`. Si ese jumper queda puesto, el modulo deja `ENA` fijo en alto y la
+STM32 ya no controla el PWM de habilitacion.
+
 ## Alimentacion del L298N
 
 El L298N tiene dos alimentaciones conceptuales diferentes:
@@ -152,6 +165,17 @@ IN1 e IN2 dicen: "hacia que lado va la corriente".
 ENA dice: "durante cuanto tiempo dejo pasar esa corriente".
 ```
 
+Otra forma de pensarlo es como un interruptor con direccion:
+
+```text
+IN1/IN2 escogen el camino interno del puente.
+ENA abre y cierra ese camino muchas veces por segundo.
+```
+
+Si `IN1/IN2` escogen el camino positivo y `ENA` esta alto, la carga recibe un
+pulso positivo. Si `IN1/IN2` escogen el camino negativo y `ENA` esta alto, la
+carga recibe un pulso negativo.
+
 ### A5 / PC0 -> ENA
 
 `A5` corresponde al pin `PC0` de la STM32. En CubeMX se configuro como
@@ -189,6 +213,9 @@ En resumen:
 A5 / PC0 / ENA = senal rapida PWM/SPWM que regula la energia entregada.
 ```
 
+En las mediciones, esta senal era la que se veia como un PWM rapido de
+aproximadamente `20 kHz`.
+
 ### D7 / PA8 -> IN1
 
 `D7` corresponde al pin `PA8` de la STM32. Esta senal va a `IN1` del L298N.
@@ -216,6 +243,9 @@ En resumen:
 ```text
 D7 / PA8 / IN1 = senal lenta que selecciona una mitad del puente H.
 ```
+
+Esta senal no se ve como PWM rapido. Se ve como una cuadrada lenta porque solo
+cambia para pasar de un semiciclo al otro.
 
 ### D8 / PA9 -> IN2
 
@@ -245,6 +275,10 @@ En resumen:
 ```text
 D8 / PA9 / IN2 = senal lenta complementaria a IN1.
 ```
+
+Si `D7` esta alto, `D8` esta bajo. Si `D7` esta bajo, `D8` esta alto. Esa
+complementariedad es la que hace que el puente entregue primero una polaridad y
+luego la polaridad contraria.
 
 ### Las tres senales trabajando juntas
 
@@ -284,10 +318,25 @@ Medio ciclo positivo -> pulsos SPWM positivos
 Medio ciclo negativo -> pulsos SPWM negativos
 ```
 
+Resumen de los estados principales:
+
+| Tiempo | IN1 / D7 | IN2 / D8 | ENA / A5 | Efecto en la salida |
+| --- | --- | --- | --- | --- |
+| Primeros `10 ms` | Alto | Bajo | SPWM | Pulsos de una polaridad |
+| Siguientes `10 ms` | Bajo | Alto | SPWM | Pulsos de polaridad contraria |
+
+La suma de los dos semiciclos da un periodo de `20 ms`, equivalente a `50 Hz`.
+
 ## Como invierte la senal el L298N
 
 El L298N tiene un puente H interno. Un puente H permite aplicar la fuente DC a
 una carga en dos sentidos distintos.
+
+El diagrama de bloques del datasheet muestra dos puentes internos: puente `A`
+para `OUT1/OUT2` y puente `B` para `OUT3/OUT4`. En este proyecto se uso solo el
+puente `A`, controlado por `IN1`, `IN2` y `ENA`.
+
+![Diagrama de bloques interno del L298N](Imagenes/Diagrama_de_bloques_L298N.png)
 
 Si el puente conecta la fuente de esta forma:
 
