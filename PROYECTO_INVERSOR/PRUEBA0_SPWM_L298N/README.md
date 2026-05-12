@@ -213,8 +213,6 @@ En resumen:
 A5 / PC0 / ENA = senal rapida PWM/SPWM que regula la energia entregada.
 ```
 
-En las mediciones, esta senal era la que se veia como un PWM rapido de
-aproximadamente `20 kHz`.
 
 ### D7 / PA8 -> IN1
 
