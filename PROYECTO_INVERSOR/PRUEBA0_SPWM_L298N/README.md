@@ -97,6 +97,8 @@ El L298N tiene dos alimentaciones conceptuales diferentes:
    - Alimenta la parte interna de control del L298N.
    - En el modulo aparece como `+5V Power`.
    - En esta prueba se alimento desde el pin `5V` de la STM32/Nucleo.
+   - Esta alimentacion no es la que mueve la carga; solo permite que el
+     integrado entienda las senales `ENA`, `IN1` e `IN2`.
 
 2. Alimentacion de potencia (`VS`):
    - Es la energia que el puente H entrega a la carga.
@@ -104,6 +106,19 @@ El L298N tiene dos alimentaciones conceptuales diferentes:
    - El nombre `+12V` es el nombre del borne del modulo, pero durante las
      pruebas se uso una fuente menor, por ejemplo `5 V`, para no forzar la
      resistencia ni el L298N.
+   - Esta alimentacion si es la que aparece conmutada en `OUT1` y `OUT2`.
+
+En otras palabras, durante la prueba hubo dos "5 V" con funciones diferentes:
+
+```text
+5 V de la STM32  -> alimenta la logica del L298N
+5 V de la fuente -> alimenta la parte de potencia del puente H
+```
+
+El `5 V` de la fuente externa se conecto al borne llamado `+12V Power` porque
+ese borne es la entrada de potencia del modulo. No significa que siempre tenga
+que ser exactamente `12 V`; en esta prueba se bajo a `5 V` para trabajar con
+menos corriente y menos calentamiento.
 
 La conexion de tierra es obligatoria:
 
@@ -116,52 +131,131 @@ STM32.
 
 ## Que hace cada senal
 
-### A5 / PC0 -> ENA
+Para entender el control del L298N, conviene separar dos ideas:
 
-`A5` corresponde al pin `PC0` de la STM32. En CubeMX fue configurado como
-`TIM1_CH1`, por eso puede generar PWM por hardware.
+1. **La direccion de la corriente por la carga.**
+2. **La cantidad de tiempo que se deja pasar energia.**
 
-Esta senal entra al pin `ENA` del L298N. `ENA` funciona como una compuerta
-general del puente A:
+En nuestro montaje esas dos cosas no las hace una sola senal. Las hace un grupo
+de tres senales:
 
 ```text
-ENA = 1 -> el puente A puede conducir
-ENA = 0 -> el puente A queda apagado
+A5 / PC0 -> ENA -> decide cuando el puente conduce
+D7 / PA8 -> IN1 -> ayuda a decidir el sentido de conduccion
+D8 / PA9 -> IN2 -> ayuda a decidir el sentido contrario
 ```
 
-Como en `ENA` se aplica PWM/SPWM, esta senal decide cuanto tiempo conducen los
-pares internos del puente seleccionados por `IN1` e `IN2`.
-
-En otras palabras:
+Una forma sencilla de verlo es esta:
 
 ```text
-ENA no decide la direccion.
-ENA decide cuanto tiempo se deja pasar energia.
+IN1 e IN2 dicen: "hacia que lado va la corriente".
+ENA dice: "durante cuanto tiempo dejo pasar esa corriente".
+```
+
+### A5 / PC0 -> ENA
+
+`A5` corresponde al pin `PC0` de la STM32. En CubeMX se configuro como
+`TIM1_CH1`, por eso puede sacar PWM por hardware.
+
+Esta senal va al pin `ENA` del L298N. `ENA` significa "Enable A", es decir,
+habilitacion del puente A.
+
+`ENA` no escoge el sentido de giro ni la polaridad. `ENA` solo permite o bloquea
+la conduccion del puente A:
+
+```text
+ENA = 1 -> el puente A queda habilitado y puede entregar energia
+ENA = 0 -> el puente A queda apagado y no entrega energia
+```
+
+En este proyecto `ENA` no se deja fijo. En `ENA` entra el PWM/SPWM. Eso hace que
+el puente se encienda y se apague muchas veces por segundo.
+
+Cuando el pulso de `ENA` esta alto, el L298N conecta la fuente DC a la carga en
+el sentido que indiquen `IN1` e `IN2`. Cuando el pulso de `ENA` esta bajo, el
+puente deja de entregar energia.
+
+Por eso `ENA` controla la energia promedio que recibe la carga. Si el duty es
+alto, pasa mas energia. Si el duty es bajo, pasa menos energia.
+
+```text
+Duty alto  -> mas tiempo conduciendo -> mas energia promedio
+Duty bajo  -> menos tiempo conduciendo -> menos energia promedio
+```
+
+En resumen:
+
+```text
+A5 / PC0 / ENA = senal rapida PWM/SPWM que regula la energia entregada.
 ```
 
 ### D7 / PA8 -> IN1
 
-`D7` corresponde al pin `PA8`. Esta senal entra a `IN1` del L298N.
+`D7` corresponde al pin `PA8` de la STM32. Esta senal va a `IN1` del L298N.
 
-`IN1` no genera el SPWM. Su funcion es seleccionar una polaridad del puente H.
-En el proyecto cambia cada `10 ms`, es decir, medio periodo de una salida de
-`50 Hz`.
+`IN1` no es la senal SPWM. `IN1` es una senal de direccion. Trabaja junto con
+`IN2` para decirle al puente H que par interno debe conducir.
+
+En nuestro codigo, `IN1` cambia cada `10 ms`. Eso significa que permanece un
+medio ciclo en un estado y luego cambia al otro medio ciclo.
+
+```text
+Primeros 10 ms: IN1 = 1
+Siguientes 10 ms: IN1 = 0
+```
+
+Como `20 ms` equivalen a un periodo completo, la salida fundamental queda cerca
+de:
+
+```text
+1 / 20 ms = 50 Hz
+```
+
+En resumen:
+
+```text
+D7 / PA8 / IN1 = senal lenta que selecciona una mitad del puente H.
+```
 
 ### D8 / PA9 -> IN2
 
-`D8` corresponde al pin `PA9`. Esta senal entra a `IN2` del L298N.
+`D8` corresponde al pin `PA9` de la STM32. Esta senal va a `IN2` del L298N.
 
-`IN2` es complementaria a `IN1`. Cuando `IN1` esta en alto, `IN2` esta en bajo.
-Cuando `IN1` esta en bajo, `IN2` esta en alto.
+`IN2` tambien es una senal de direccion, pero funciona invertida respecto a
+`IN1`.
 
-Asi el puente H invierte la polaridad de la salida cada medio ciclo.
+Cuando `IN1` esta en alto, `IN2` esta en bajo:
 
-## Como invierte la senal el L298N
+```text
+IN1 = 1
+IN2 = 0
+```
 
-El L298N contiene internamente un puente H. En el puente A, `IN1` e `IN2`
-seleccionan que par interno conduce.
+Cuando `IN1` esta en bajo, `IN2` esta en alto:
 
-Primer medio ciclo:
+```text
+IN1 = 0
+IN2 = 1
+```
+
+Esto es lo que permite invertir la polaridad entre `OUT1` y `OUT2`.
+
+En resumen:
+
+```text
+D8 / PA9 / IN2 = senal lenta complementaria a IN1.
+```
+
+### Las tres senales trabajando juntas
+
+El punto clave es que el L298N no recibe una sola senal. Recibe tres ordenes:
+
+```text
+IN1 e IN2 -> sentido de la salida
+ENA       -> pulsos de energia en ese sentido
+```
+
+Durante el primer medio ciclo:
 
 ```text
 IN1 = 1
@@ -169,13 +263,10 @@ IN2 = 0
 ENA = SPWM
 ```
 
-Durante los pulsos altos de `ENA`, el puente aplica una polaridad:
+La salida entre `OUT1` y `OUT2` queda con una polaridad. Durante los pulsos altos
+de `ENA`, la carga recibe energia en ese sentido.
 
-```text
-OUT1 positivo respecto a OUT2
-```
-
-Segundo medio ciclo:
+Durante el segundo medio ciclo:
 
 ```text
 IN1 = 0
@@ -183,47 +274,112 @@ IN2 = 1
 ENA = SPWM
 ```
 
-Durante los pulsos altos de `ENA`, el puente aplica la polaridad contraria:
+La salida entre `OUT1` y `OUT2` queda con la polaridad contraria. Durante los
+pulsos altos de `ENA`, la carga recibe energia en el sentido opuesto.
+
+Asi se obtiene una salida alterna:
 
 ```text
-OUT2 positivo respecto a OUT1
+Medio ciclo positivo -> pulsos SPWM positivos
+Medio ciclo negativo -> pulsos SPWM negativos
 ```
 
-Por eso, al medir la salida real de la carga, no se debe mirar solo `OUT1`
-contra tierra ni solo `OUT2` contra tierra. La salida util del puente H es:
+## Como invierte la senal el L298N
+
+El L298N tiene un puente H interno. Un puente H permite aplicar la fuente DC a
+una carga en dos sentidos distintos.
+
+Si el puente conecta la fuente de esta forma:
+
+```text
+OUT1 = +V
+OUT2 = 0 V
+```
+
+la carga ve:
+
+```text
+OUT1 - OUT2 = +V
+```
+
+Si el puente invierte las conexiones internas:
+
+```text
+OUT1 = 0 V
+OUT2 = +V
+```
+
+la carga ve:
+
+```text
+OUT1 - OUT2 = -V
+```
+
+Ese cambio de `+V` a `-V` es la inversion de polaridad. En nuestro proyecto,
+esa inversion ocurre cada `10 ms` porque `IN1` e `IN2` se intercambian cada
+medio ciclo.
+
+El L298N hace internamente la seleccion de transistores. La STM32 no prende
+directamente cada transistor del puente. La STM32 solo manda estas ordenes:
+
+```text
+IN1/IN2 -> que par debe conducir
+ENA     -> cuando debe conducir ese par
+```
+
+Por eso para esta prueba no se programo dead time externo: no se estan manejando
+directamente las compuertas de MOSFETs discretos. El L298N recibe senales
+logicas y hace la conmutacion interna.
+
+## Por que OUT1 y OUT2 por separado no muestran voltaje negativo
+
+Esta fue una de las partes mas importantes de la medicion.
+
+Cuando se mide `OUT1` contra GND, se ve solamente el voltaje de `OUT1` respecto
+a tierra. Cuando se mide `OUT2` contra GND, se ve solamente el voltaje de
+`OUT2` respecto a tierra. Cada una de esas salidas normalmente se mueve entre:
+
+```text
+0 V y +V de la fuente
+```
+
+Por eso en el osciloscopio, mirando cada canal por separado, no aparece una
+senal negativa clara.
+
+La carga no esta conectada de `OUT1` a GND ni de `OUT2` a GND. La carga esta
+conectada entre `OUT1` y `OUT2`.
+
+Entonces la salida real es diferencial:
 
 ```text
 Vout = OUT1 - OUT2
 ```
 
-En WaveForms se midio asi:
+Ejemplo:
+
+```text
+OUT1 = +5 V
+OUT2 = 0 V
+Vout = OUT1 - OUT2 = +5 V
+```
+
+Luego el puente invierte:
+
+```text
+OUT1 = 0 V
+OUT2 = +5 V
+Vout = OUT1 - OUT2 = -5 V
+```
+
+Por eso en WaveForms se uso:
 
 ```text
 CH1 -> OUT1
 CH2 -> OUT2
-GND -> GND comun
 Math 1 = C1 - C2
 ```
 
-## Por que OUT1 y OUT2 por separado no muestran voltaje negativo
-
-Cuando se mide cada salida contra GND, ambas senales se ven entre `0 V` y el
-voltaje de la fuente de potencia. Eso es normal:
-
-```text
-OUT1 contra GND -> 0 V a +V
-OUT2 contra GND -> 0 V a +V
-```
-
-La carga no esta conectada de una salida a GND. La carga esta conectada entre
-`OUT1` y `OUT2`, entonces lo que importa es la diferencia:
-
-```text
-OUT1 = +V, OUT2 = 0 V  -> OUT1 - OUT2 = +V
-OUT1 = 0 V,  OUT2 = +V -> OUT1 - OUT2 = -V
-```
-
-Por eso la salida bipolar aparece al usar `C1 - C2`.
+`Math 1` es la tension que realmente ve la carga.
 
 ## Diseno del codigo
 
@@ -498,21 +654,6 @@ P = V^2 / R = 25 / 10 = 2.5 W
 En la practica, el L298N tiene caida interna, por lo que la tension real sobre
 la carga puede ser menor. El L298N puede calentarse porque no es un driver
 eficiente para potencia alta.
-
-## Precauciones importantes
-
-- No conectar alto voltaje en esta etapa.
-- No conectar la salida del puente H directamente a GND.
-- La carga debe ir entre `OUT1` y `OUT2`.
-- El Analog Discovery debe compartir GND con el circuito, pero sus entradas se
-  conectan a `OUT1` y `OUT2` por separado.
-- Para ver la salida bipolar se usa `C1 - C2`.
-- No poner capacitores electroliticos polarizados directamente en una salida
-  alterna bipolar.
-- Si se usan electroliticos, usar dos iguales espalda con espalda.
-- Vigilar temperatura del L298N, resistencia e inductores/capacitores.
-- El L298N sirve para pruebas didacticas, pero no es ideal para un inversor de
-  potencia final.
 
 ## Estado actual
 
