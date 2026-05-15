@@ -6,5 +6,6 @@ Repositorio personal para organizar materias, apuntes, talleres, codigo, proyect
 
 - [Teoria de Senales](TEORÍA_DE_SEÑALES/)
 - [Teoría de aprendizaje de máquina](TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/)
+- [Proyecto Inversor](PROYECTO_INVERSOR/)
 
 
