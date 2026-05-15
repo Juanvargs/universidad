@@ -1,122 +1,219 @@
-# Driver y fuente aislada para el puente H MSCSM120HM16CT3AG
+# Driver, fuente aislada y filtro para el puente H MSCSM120HM16CT3AG
 
-Fecha de revision: 2026-05-14  
-Componentes seleccionados: `UCC21540DW / UCC21540DWR` y `SN6505BDBVR`  
-Aplicacion real base: `TIDA-010933`, microinverter bidireccional de 1.6 kW de Texas Instruments.  
-Punto de partida del prototipo: corriente limitada a `3 A`. No se usara el limite maximo de `1200 V` del modulo en la primera etapa.
+Autor: Juan Pablo Vargas Cordoba  
+Universidad Nacional de Colombia  
+Fecha de organizacion: 2026-05-15  
+Componentes principales: `UCC21540DWR`, `SN6505BDBVR` y filtro LC de salida  
+Punto de partida del prototipo: corriente limitada a `3 A`
 
-## 1. Resumen ejecutivo
+## 1. Proposito del documento
 
-La combinacion `UCC21540` + `SN6505B` tiene sentido para una primera implementacion real del puente H `MSCSM120HM16CT3AG` trabajando a `3 A`. A esa corriente, el modulo SiC queda muy sobredimensionado en conduccion; por tanto, el riesgo principal no es la corriente nominal del MOSFET, sino la forma de manejar las compuertas, el aislamiento, el dead-time, las protecciones y el layout.
+Este documento organiza los componentes necesarios para implementar el puente H `MSCSM120HM16CT3AG` en una primera prueba controlada de `3 A`. Se explican los datos relevantes del driver de compuerta, de la fuente aislada y del filtro de salida. Al final se presentan calculos base para justificar la seleccion y definir valores iniciales de implementacion.
 
-La conclusion actual es:
+## 2. Arquitectura general de implementacion
 
-- Para un puente H completo se necesitan dos `UCC21540`, porque cada integrado tiene dos salidas y el modulo tiene cuatro MOSFETs.
-- El `SN6505BDBVR` sirve para construir la fuente aislada de compuerta, pero no es una fuente aislada completa por si solo. Necesita transformador, rectificacion, filtrado y, si aplica, regulacion.
-- Aunque el modulo es de `1200 V`, el diseno inicial debe tratarse como un prototipo de baja potencia/corriente limitada.
-- El `UCC21540` no permite usar exactamente `+20 V / -5 V`, porque su alimentacion maxima de salida es `18 V` entre `VDDx` y `VSSx`.
-- Para este prototipo se recomienda empezar con `+18 V / 0 V` o `+15 V / -3 V`.
-- Para `3 A`, las perdidas de conduccion son pequenas, pero aun asi se debe mantener proteccion de sobrecorriente por hardware.
+```text
+STM32G474
+  -> senales PWM con dead-time
+  -> drivers aislados UCC21540DWR
+  -> compuertas del puente H MSCSM120HM16CT3AG
+  -> filtro LC de salida
+  -> carga
 
-## 2. Referencia real: TIDA-010933
+5 V auxiliar
+  -> SN6505BDBVR
+  -> transformador aislado
+  -> rectificacion y filtrado
+  -> alimentacion aislada de los drivers
+```
 
-`TIDA-010933` es un diseno de referencia de Texas Instruments para un microinverter bidireccional de `1.6 kW` basado en GaN. Es relevante porque demuestra una arquitectura real con control digital, drivers aislados, fuentes aisladas auxiliares y convertidores de potencia compactos.
-
-| Especificacion | Valor en TIDA-010933 | Que significa para este proyecto |
+| Bloque | Funcion | Descripcion corta |
 | --- | --- | --- |
-| Tipo de aplicacion | Microinverter bidireccional | Es una aplicacion real cercana al objetivo de conversion DC/AC. |
-| Potencia de referencia | 1.6 kW | Muestra que los componentes se usan en equipos de potencia, no solo en pruebas pequenas. |
-| Producto resaltado | `UCC21540` | TI lo propone como driver aislado en un diseno real. |
-| Alimentaciones aisladas | Se usan fuentes aisladas auxiliares | Confirma que el driver de potencia necesita dominios flotantes bien definidos. |
-| Alta frecuencia | El diseno busca reducir tamano de filtros EMI | Es util como referencia para pensar en layout, EMI y fuentes auxiliares. |
+| STM32G474 | Generacion de PWM/SPWM | Produce las senales logicas de control y el dead-time. |
+| `UCC21540DWR` | Driver de compuerta aislado | Convierte senales logicas en pulsos de compuerta con corriente suficiente. |
+| `SN6505BDBVR` | Driver push-pull para transformador | Permite construir fuentes aisladas para alimentar los drivers. |
+| Transformador aislado | Aislamiento galvanico de alimentacion | Es el elemento que separa electricamente el control de los nodos de potencia. |
+| Puente H SiC | Etapa de potencia | Invierte la polaridad aplicada a la carga mediante cuatro MOSFETs. |
+| Filtro LC | Suavizado de salida | Atenua la componente de conmutacion y deja pasar la componente fundamental. |
 
-Fuentes:
+## 3. Driver de compuerta UCC21540DWR
 
-- TI TIDA-010933: https://www.ti.com/tool/TIDA-010933
-- Guia de diseno TIDA-010933: https://www.ti.com/document-viewer/lit/html/TIDUF63
-- Referencia Wurth para `SN6505` en TIDA-010933: https://www.we-online.com/en/components/icref/texas-instruments/SN6505-TIDA-010933-Inverter
+El `UCC21540DWR` es un driver aislado de doble canal. No maneja la corriente de la carga; su trabajo es cargar y descargar rapidamente las compuertas de los MOSFETs.
 
-## 3. Requisitos del puente H considerando una primera prueba de 3 A
+| Caracteristica | Valor | Descripcion corta |
+| --- | --- | --- |
+| Fabricante | Texas Instruments | Proveedor del driver y del datasheet oficial. |
+| Tipo | Driver aislado de compuerta, doble canal | Tiene dos salidas de compuerta aisladas respecto a la entrada logica. |
+| Cantidad necesaria | 2 integrados | Un puente H tiene cuatro MOSFETs; cada integrado maneja dos compuertas. |
+| Corriente pico de salida | 4 A source, 6 A sink | Capacidad para cargar y descargar rapidamente la compuerta. |
+| Alimentacion logica `VCCI` | 3 V a 5.5 V | Compatible con senales logicas de microcontroladores como la STM32. |
+| Alimentacion de salida `VDDA/B` | 9.2 V a 18 V | Limita la tension total disponible para manejar cada compuerta. |
+| Aislamiento entrada-salida | 5.7 kVrms por 1 minuto | Separa el control de los dominios de potencia. |
+| CMTI | Mayor que 100 V/ns | Inmunidad ante cambios rapidos de tension de modo comun. |
+| Retardo de propagacion | 33 ns tipico, 40 ns max | Tiempo entre la senal de entrada y la respuesta de salida. |
+| Matching de retardo | 5 ns max | Diferencia maxima entre canales; ayuda a definir dead-time. |
+| Dead-time | Programable por resistencia | Permite agregar una proteccion temporal contra conduccion cruzada. |
+| Entrada `DISABLE` | Apagado de salidas | Puede conectarse a una proteccion de sobrecorriente por hardware. |
+| UVLO | Proteccion por baja tension | Evita activar compuertas si la alimentacion del driver no es suficiente. |
+| Encapsulado recomendado | `DWR` | Variante activa para disenos nuevos. |
 
-| Especificacion | Valor del `MSCSM120HM16CT3AG` | Que significa | Decision para prototipo de 3 A |
+### 3.1 Relacion entre UCC21540DWR y el modulo SiC
+
+| Necesidad del puente H | Dato del `UCC21540DWR` | Resultado |
+| --- | --- | --- |
+| Cuatro compuertas de MOSFET | Dos canales por integrado | Se usan dos drivers. |
+| Separacion entre control y potencia | Aislamiento de 5.7 kVrms | Cumple para arquitectura aislada. |
+| Conmutacion rapida de SiC | CMTI mayor que 100 V/ns | Adecuado para nodos con alto `dv/dt`. |
+| Carga de compuerta grande | 4 A source y 6 A sink | Puede manejar corrientes pico calculadas para 18 V. |
+| Manejo ideal del datasheet `+20 V / -5 V` | Salida maxima 18 V totales | No se puede usar `+20/-5`; se debe usar `+18/0` o `+15/-3`. |
+
+## 4. Fuente aislada con SN6505BDBVR
+
+El `SN6505BDBVR` no es una fuente aislada completa. Es un driver push-pull que excita un transformador. El aislamiento real lo entrega el transformador, y la salida DC se obtiene con rectificacion y filtrado.
+
+| Caracteristica | Valor | Descripcion corta |
+| --- | --- | --- |
+| Fabricante | Texas Instruments | Proveedor del integrado y del datasheet oficial. |
+| Tipo | Driver push-pull para transformador | Alterna corriente en el primario de un transformador pequeno. |
+| Alimentacion de entrada | 2.25 V a 5.5 V | Puede alimentarse desde 3.3 V o 5 V; para potencia auxiliar conviene 5 V. |
+| Corriente de salida primaria | 1 A a 5 V | Capacidad para excitar el transformador de la fuente aislada. |
+| Frecuencia interna | 420 kHz en version `SN6505B` | Permite usar transformadores pequenos. |
+| `RDS(on)` interno | 0.25 ohm max a 4.5 V | Menor resistencia interna implica menor perdida. |
+| Limite de corriente | 1.7 A | Protege el integrado durante sobrecarga o arranque. |
+| EMI | Slew-rate control y spread spectrum | Reduce ruido generado por la fuente auxiliar. |
+| Protecciones | UVLO, limite de corriente, apagado termico, soft-start | Facilitan un arranque mas controlado. |
+| Encapsulado | SOT-23-6 `DBV` | Pequeno; exige buen layout y capacitores cercanos. |
+
+### 4.1 Bloque de alimentacion aislada
+
+```text
+5 V auxiliar
+  -> SN6505BDBVR
+  -> transformador push-pull
+  -> diodos Schottky
+  -> capacitores de filtrado
+  -> regulacion o clamp
+  -> VDDA/VSSA y VDDB/VSSB del UCC21540DWR
+```
+
+| Elemento | Funcion | Descripcion corta |
+| --- | --- | --- |
+| 5 V auxiliar | Entrada de energia | Alimenta el `SN6505BDBVR`. No debe confundirse con el bus DC de potencia. |
+| Transformador | Aislamiento y transferencia de energia | Permite alimentar drivers high-side flotantes. |
+| Rectificador | Conversion AC a DC | Convierte la senal del secundario en tension continua. |
+| Capacitor de salida | Filtrado | Reduce rizado de la fuente aislada. |
+| Regulador o clamp | Control de tension | Evita superar los 18 V permitidos por el driver. |
+
+## 5. Filtro de salida LC
+
+El filtro LC se ubica despues del puente H. Su objetivo es atenuar la frecuencia de conmutacion PWM y permitir que la componente fundamental de baja frecuencia llegue a la carga.
+
+| Variable | Significado | Descripcion corta |
+| --- | --- | --- |
+| `L` | Inductancia serie | Se opone a cambios rapidos de corriente y reduce el rizado de alta frecuencia. |
+| `C` | Capacitancia en paralelo con la carga | Se opone a cambios rapidos de tension y deriva componentes de alta frecuencia. |
+| `Rload` | Carga equivalente | Define la corriente y amortigua el filtro. |
+| `fsw` | Frecuencia de conmutacion | Frecuencia del PWM/SPWM. Debe ser mucho mayor que la fundamental. |
+| `f0` | Frecuencia fundamental | Frecuencia deseada de salida, por ejemplo 50 Hz o 60 Hz. |
+| `fc` | Frecuencia de corte del filtro | Debe quedar por encima de `f0` y por debajo de `fsw`. |
+
+Formula de frecuencia de corte ideal:
+
+```text
+fc = 1 / (2 * pi * sqrt(L * C))
+```
+
+Para una primera prueba, una regla util es:
+
+```text
+f0 << fc << fsw
+```
+
+Esto significa que el filtro debe dejar pasar la senal fundamental, pero debe atenuar la conmutacion rapida.
+
+## 6. Tabla de implementacion inicial a 3 A
+
+La siguiente tabla resume valores iniciales para una primera etapa de validacion. La corriente se limita a `3 A`; el bus DC debe mantenerse bajo y con limite de corriente de fuente.
+
+| Parte | Valor inicial | Calculo / criterio | Descripcion |
 | --- | --- | --- | --- |
-| Topologia | Puente H completo | Hay cuatro MOSFETs que deben manejarse de forma coordinada. | Usar dos drivers duales `UCC21540`. |
-| Tension maxima del modulo | 1200 V | Es el limite del modulo, no el valor obligatorio de operacion. | No disenar la primera prueba para 1200 V; usar bus DC bajo y limitado. |
-| Corriente nominal | 173 A a `TC = 25 C`; 138 A a `TC = 80 C` | El modulo soporta mucha mas corriente que la prueba inicial. | A `3 A` hay mucho margen de conduccion. |
-| Corriente inicial objetivo | 3 A | Este sera el limite de laboratorio para comenzar. | Dimensionar protecciones para cortar por encima de 3 A, por ejemplo 3.5 A a 5 A segun margen experimental. |
-| `RDS(on)` | 12.5 mohm tipico, 16 mohm max a `VGS = 20 V`; 20 mohm tipico a `TJ = 175 C` | Define la perdida por conduccion `I^2 * R`. | A `3 A`, la perdida es muy baja. |
-| `VGS` absoluto | -10 V a +25 V | No se debe superar este rango entre gate y source. | Con `+18/0` o `+15/-3` se permanece dentro del limite. |
-| Manejo dinamico del datasheet | `+20 V / -5 V` | Es la condicion ideal usada por el fabricante para caracterizar switching. | No se puede replicar con `UCC21540`; usar 18 V totales. |
-| `Qg` | 464 nC por MOSFET | Energia necesaria para cargar/descargar la compuerta. | La fuente aislada se dimensiona por `Qg` y `fsw`, no por los 3 A de carga. |
-| Tiempos del MOSFET | `Td(on)=30 ns`, `Tr=30 ns`, `Td(off)=50 ns`, `Tf=25 ns` | El dispositivo puede conmutar rapido. | El driver y layout deben evitar retardos, ruido y disparos falsos. |
-| Sensor termico | NTC interno 50 kohm | Permite medir temperatura del modulo. | Usarlo desde la primera placa aunque la corriente inicial sea baja. |
+| Corriente de prueba | 3 A | Valor definido de laboratorio | Permite validar control, driver y filtro sin exigir el limite real del modulo. |
+| Bus DC inicial | 24 V a 48 V | Fuente limitada en corriente | Rango bajo para pruebas funcionales. No usar alta tension en la primera etapa. |
+| Frecuencia SPWM | 20 kHz a 50 kHz | Compromiso entre perdidas y filtro | Frecuencia suficientemente alta para filtrar, pero no extrema para el primer prototipo. |
+| Fundamental de salida | 50 Hz o 60 Hz | Segun objetivo de la prueba | Frecuencia que debe quedar despues del filtro LC. |
+| Driver de compuerta | 2 x `UCC21540DWR` | 4 MOSFETs / 2 canales por driver | Cada integrado maneja una rama o dos compuertas segun el esquema. |
+| Fuente aislada | 2 x `SN6505BDBVR` + transformadores | Un bloque por rama como punto de partida | Simplifica dominios aislados y pruebas. |
+| Tension de compuerta simple | `+18 V / 0 V` | Maximo total permitido por UCC21540 | Facil de implementar, pero menos robusta contra encendido Miller. |
+| Tension de compuerta recomendada | `+15 V / -3 V` | Total = 18 V | Mejora apagado sin superar el limite del driver. |
+| Proteccion de corriente | Corte entre 3.5 A y 5 A | Margen sobre 3 A nominal | Debe ir a `DISABLE` del driver y/o `BKIN` de la STM32. |
+| Filtro LC inicial | Definir con `fc` entre fundamental y `fsw` | `fc = 1/(2*pi*sqrt(L*C))` | Se ajusta segun carga, bus DC, rizado permitido y componentes disponibles. |
 
-## 4. Calculos para corriente inicial de 3 A
+## 7. Calculos para corriente de 3 A
 
-### 4.1 Perdidas de conduccion
+### 7.1 Perdidas de conduccion
 
-La perdida de conduccion aproximada de un MOSFET encendido es:
+La perdida de conduccion de un MOSFET encendido se estima con:
 
 ```text
 Pcond_MOSFET = I^2 * RDS(on)
 ```
 
-Para una corriente de `3 A`:
+En un puente H, durante un estado activo normalmente conducen dos MOSFETs en serie con la carga:
 
-| Caso | Calculo | Resultado | Que significa |
+```text
+Pcond_camino = 2 * Pcond_MOSFET
+```
+
+| Caso | Calculo | Resultado | Descripcion |
 | --- | --- | --- | --- |
-| MOSFET, `RDS(on)` tipico 25 C | `3^2 * 0.0125` | 0.1125 W | Perdida instantanea por MOSFET cuando conduce. |
-| MOSFET, `RDS(on)` max 25 C | `3^2 * 0.016` | 0.144 W | Caso mas conservador a temperatura baja. |
-| MOSFET, `RDS(on)` tipico 175 C | `3^2 * 0.020` | 0.180 W | Perdida aproximada si el modulo esta caliente. |
-| Camino de corriente con dos MOSFETs, tipico 25 C | `2 * 0.1125` | 0.225 W | En un puente H normalmente conducen dos MOSFETs en serie con la carga. |
-| Camino de corriente con dos MOSFETs, max 25 C | `2 * 0.144` | 0.288 W | Perdida de conduccion muy baja para el modulo. |
-| Camino de corriente con dos MOSFETs, tipico 175 C | `2 * 0.180` | 0.360 W | Incluso caliente, el modulo queda holgado para 3 A. |
+| MOSFET con `RDS(on)` tipico 25 C | `3^2 * 0.0125` | 0.1125 W | Perdida por un MOSFET conduciendo a 3 A. |
+| MOSFET con `RDS(on)` max 25 C | `3^2 * 0.016` | 0.144 W | Caso conservador a temperatura baja. |
+| MOSFET caliente, `RDS(on)` tipico 175 C | `3^2 * 0.020` | 0.180 W | Perdida estimada si la resistencia aumenta por temperatura. |
+| Camino con dos MOSFETs, tipico 25 C | `2 * 0.1125` | 0.225 W | Perdida total aproximada del camino activo del puente. |
+| Camino con dos MOSFETs, max 25 C | `2 * 0.144` | 0.288 W | Caso conservador del camino activo. |
+| Camino con dos MOSFETs, caliente | `2 * 0.180` | 0.360 W | A 3 A sigue siendo una perdida baja para este modulo. |
 
-Lectura practica: a `3 A`, las perdidas de conduccion no son el problema principal. El foco debe estar en no cometer errores de conmutacion, aislamiento, dead-time, medicion y proteccion.
+Conclusion: a `3 A`, la conduccion no es el punto critico del modulo. El cuidado principal esta en compuerta, aislamiento, dead-time, protecciones y layout.
 
-### 4.2 Corriente pico de compuerta con UCC21540
+### 7.2 Corriente pico de compuerta
 
-Con el `UCC21540` se recomienda usar 18 V totales de manejo de compuerta. La corriente pico aproximada depende de la resistencia externa y de la resistencia interna de compuerta del modulo:
+La corriente pico aproximada del driver se calcula con:
 
 ```text
 Igate_on  = Vdrive / (RGon + RGint)
 Igate_off = Vdrive / (RGoff + RGint)
 ```
 
-Usando datos del datasheet del modulo:
+Usando `Vdrive = 18 V`, `RGon = 4 ohm`, `RGoff = 2.4 ohm` y `RGint = 2.94 ohm`:
 
-| Especificacion | Valor | Calculo | Resultado | Que significa |
-| --- | --- | --- | --- | --- |
-| `Vdrive_total` | 18 V | - | 18 V | Tension maxima practica compatible con `UCC21540`. |
-| `RGon` externa | 4 ohm | - | 4 ohm | Resistencia usada por el fabricante para encendido. |
-| `RGoff` externa | 2.4 ohm | - | 2.4 ohm | Resistencia usada por el fabricante para apagado. |
-| `RGint` | 2.94 ohm | - | 2.94 ohm | Resistencia interna de compuerta del modulo. |
-| Corriente pico ON | `18 / (4 + 2.94)` | - | 2.59 A | Menor que los 4 A source del driver; cumple. |
-| Corriente pico OFF | `18 / (2.4 + 2.94)` | - | 3.37 A | Menor que los 6 A sink del driver; cumple. |
+| Calculo | Resultado | Descripcion |
+| --- | --- | --- |
+| `Igate_on = 18 / (4 + 2.94)` | 2.59 A | Corriente pico de encendido. Esta por debajo de los 4 A source del UCC21540. |
+| `Igate_off = 18 / (2.4 + 2.94)` | 3.37 A | Corriente pico de apagado. Esta por debajo de los 6 A sink del UCC21540. |
 
-Conclusion: para 18 V totales de compuerta, el `UCC21540` tiene margen de corriente de salida para manejar este modulo en la prueba inicial.
+Conclusion: el `UCC21540DWR` tiene margen de corriente de salida para esta estrategia inicial de compuerta.
 
-### 4.3 Energia de compuerta y fuente aislada
+### 7.3 Potencia de compuerta
 
-La potencia promedio de compuerta se estima como:
+La potencia promedio necesaria para cargar y descargar compuertas se estima con:
 
 ```text
-Pgate = Qg * Vdrive_total * fsw
+Pgate = Qg * Vdrive * fsw
 ```
 
-Usando `Qg = 464 nC` como valor conservador y `Vdrive_total = 18 V`:
+Usando `Qg = 464 nC` y `Vdrive = 18 V`:
 
-| Frecuencia SPWM | Potencia por MOSFET | Potencia para 4 MOSFETs | Que significa |
+| `fsw` | Potencia por MOSFET | Potencia para 4 MOSFETs | Descripcion |
 | --- | --- | --- | --- |
-| 20 kHz | 0.167 W | 0.668 W | Frecuencia razonable para primera prueba; fuente aislada moderada. |
-| 50 kHz | 0.418 W | 1.672 W | Aun viable, pero exige mejor transformador y control de EMI. |
-| 100 kHz | 0.835 W | 3.340 W | Posible teoricamente, pero no recomendable como primer arranque. |
+| 20 kHz | 0.167 W | 0.668 W | Valor razonable para una primera prueba. |
+| 50 kHz | 0.418 W | 1.672 W | Exige mejor fuente aislada y mejor control de EMI. |
+| 100 kHz | 0.835 W | 3.340 W | No recomendado como primera condicion de arranque. |
 
-Nota importante: esta potencia depende de `Qg` y frecuencia de conmutacion, no de que la carga sea de `3 A`. Aunque el modulo conduzca poca corriente, las compuertas siguen siendo grandes y necesitan una fuente auxiliar seria.
+Esta potencia depende de la carga de compuerta y de la frecuencia de conmutacion, no directamente de la corriente de carga de `3 A`.
 
-### 4.4 Perdidas de conmutacion estimadas a 3 A
+### 7.4 Perdidas de conmutacion estimadas
 
-El datasheet da:
+El datasheet reporta:
 
 ```text
 Eon = 1.98 mJ
@@ -125,208 +222,69 @@ Etotal = 3.28 mJ
 Condicion: 600 V, 100 A, TJ = 150 C
 ```
 
-Para estimar de forma preliminar a `3 A`, se puede escalar linealmente con corriente y tension de bus:
+Una estimacion preliminar para `3 A` puede escalarse con tension y corriente:
 
 ```text
 Etotal_aprox = 3.28 mJ * (Vbus / 600 V) * (3 A / 100 A)
+Psw_aprox = Etotal_aprox * fsw
 ```
 
-| Bus DC de prueba | Energia aprox por MOSFET y ciclo | Perdida por MOSFET a 20 kHz | Perdida por MOSFET a 50 kHz | Que significa |
+| Bus DC | `Etotal_aprox` por MOSFET | `Psw` a 20 kHz | `Psw` a 50 kHz | Descripcion |
 | --- | --- | --- | --- | --- |
-| 24 V | 3.94 uJ | 0.079 W | 0.197 W | Muy baja; ideal para primera validacion funcional. |
-| 48 V | 7.87 uJ | 0.157 W | 0.394 W | Aun comodo; buen siguiente paso de laboratorio. |
-| 100 V | 16.4 uJ | 0.328 W | 0.820 W | Empieza a exigir mas cuidado termico y EMI. |
-| 200 V | 32.8 uJ | 0.656 W | 1.640 W | Ya requiere validacion seria de layout, disipacion y protecciones. |
+| 24 V | 3.94 uJ | 0.079 W | 0.197 W | Muy comodo para validacion inicial. |
+| 48 V | 7.87 uJ | 0.157 W | 0.394 W | Aun adecuado para pruebas controladas. |
+| 100 V | 16.4 uJ | 0.328 W | 0.820 W | Requiere mas cuidado termico y de medicion. |
+| 200 V | 32.8 uJ | 0.656 W | 1.640 W | Ya exige layout, proteccion y disipacion bien validados. |
 
-Este calculo es aproximado. Las perdidas reales dependen del bus, corriente, temperatura, resistencias de compuerta, inductancias parasitas y forma de modulacion.
+Este calculo es aproximado. Las perdidas reales dependen de tension, corriente, temperatura, resistencias de compuerta, inductancia parasita y forma de conmutacion.
 
-## 5. Ficha tecnica: UCC21540DW / UCC21540DWR
+### 7.5 Filtro LC de salida
 
-| Especificacion | Valor | Que significa para el proyecto |
+Para seleccionar un filtro LC inicial:
+
+```text
+fc = 1 / (2 * pi * sqrt(L * C))
+```
+
+Si se conoce una inductancia disponible, se puede despejar la capacitancia:
+
+```text
+C = 1 / ((2 * pi * fc)^2 * L)
+```
+
+Si se conoce una capacitancia disponible, se puede despejar la inductancia:
+
+```text
+L = 1 / ((2 * pi * fc)^2 * C)
+```
+
+Ejemplo con `L = 270 uH`:
+
+| Capacitancia | Frecuencia de corte | Descripcion |
 | --- | --- | --- |
-| Fabricante | Texas Instruments | Proveedor reconocido y con documentacion completa. |
-| Tipo | Driver aislado de compuerta, doble canal | Permite manejar dos MOSFETs desde senales logicas aisladas. |
-| Canales | 2 | Se necesitan dos integrados para un puente H de cuatro MOSFETs. |
-| Configuracion | Dos low-side, dos high-side o half-bridge | Puede adaptarse a cada rama del puente H. |
-| Aislacion entrada-salida | 5.7 kVrms por 1 minuto | Aisla la STM32/control de la etapa de potencia. |
-| Aislacion reforzada | 8000 Vpk segun familia UCC2154x | Da margen de seguridad electrica frente a transitorios. |
-| CMTI | Mayor que 100 V/ns; TI tambien lista 125 V/ns | Ayuda a evitar disparos falsos por alto `dv/dt`. |
-| Corriente pico de salida | 4 A source, 6 A sink | Suficiente para los 2.59 A ON y 3.37 A OFF estimados con 18 V. |
-| `VCCI` | 3 V a 5.5 V | Compatible con logica de microcontrolador de 3.3 V o 5 V. |
-| `VDDA/B` | 9.2 V a 18 V | Limita el manejo de compuerta a 18 V totales. |
-| UVLO | En todas las alimentaciones | Evita conmutar con alimentacion insuficiente. |
-| Retardo de propagacion | 33 ns tipico; 40 ns max | Es rapido frente a frecuencias SPWM de 20 kHz a 50 kHz. |
-| Matching de retardo | 5 ns max | Reduce diferencias entre canales y facilita dead-time. |
-| Distorsion de ancho de pulso | 5.5 ns a 6 ns max | Mantiene precision temporal de la PWM. |
-| Rise/fall time tipico | 5 ns / 6 ns | El integrado puede entregar flancos rapidos; la compuerta real sera mas lenta por `Qg` y resistencias. |
-| Dead-time | Programable por resistencia | Da una segunda barrera contra conduccion cruzada. |
-| Disable | Apaga simultaneamente ambas salidas | Puede conectarse a una proteccion de sobrecorriente por hardware. |
-| Temperatura de operacion | -40 C a 125 C | Adecuado para ambiente de laboratorio y electronica de potencia. |
-| Encapsulado | SOIC-16 `DW`; variantes `DWK` | Paquete soldable en PCB, con creepage/clearance definidos. |
-| Estado de compra | `UCC21540DW` EOL/obsoleto; `UCC21540DWR` activo | Conviene comprar `UCC21540DWR` si se va a fabricar una placa nueva. |
+| `1 uF` | 9.69 kHz | Atenua poco la conmutacion si `fsw` es cercana a 20 kHz. |
+| `11 uF` | 2.92 kHz | Mejor filtrado; valor equivalente de dos capacitores de 22 uF en serie. |
+| `23.5 uF` | 2.00 kHz | Mejor suavizado; valor equivalente de dos capacitores de 47 uF en serie. |
 
-Fuentes:
+Para una salida de 50 Hz con SPWM de 20 kHz, una `fc` alrededor de 2 kHz deja pasar la fundamental y atenua parte importante del rizado de conmutacion. El valor final debe validarse con osciloscopio, temperatura del inductor, corriente RMS del capacitor y comportamiento de la carga.
+
+## 8. Recomendacion de implementacion inicial
+
+| Elemento | Seleccion inicial | Motivo |
+| --- | --- | --- |
+| Driver | 2 x `UCC21540DWR` | Manejan cuatro compuertas con aislamiento y corriente suficiente. |
+| Fuente aislada | 2 x `SN6505BDBVR` con transformadores adecuados | Permiten alimentar dominios flotantes de los drivers. |
+| Tension de compuerta | `+15 V / -3 V` preferida | Mejora apagado y mantiene 18 V totales. |
+| Corriente de prueba | 3 A | Valor seguro para primera validacion. |
+| Bus DC | 24 V a 48 V inicialmente | Permite observar funcionamiento sin entrar en alta tension. |
+| Frecuencia SPWM | 20 kHz al inicio | Reduce exigencia de compuerta frente a frecuencias mas altas. |
+| Filtro | LC con `fc` entre 1 kHz y 3 kHz como punto de partida | Deja pasar 50 Hz y reduce rizado de PWM. |
+| Proteccion minima | Sobrecorriente por hardware y apagado de driver | No depender solamente del firmware. |
+
+## 9. Fuentes consultadas
 
 - TI `UCC21540DWR`: https://www.ti.com/product/UCC21540/part-details/UCC21540DWR
 - Datasheet TI `UCC21540`: https://www.ti.com/lit/ds/symlink/ucc21540.pdf
-- Mouser `UCC21540DW`: https://www.mouser.com/ProductDetail/Texas-Instruments/UCC21540DW?qs=byeeYqUIh0PZlHLK%252BqwDFA%3D%3D
-- DigiKey `UCC21540DW`: https://www.digikey.com/en/products/detail/texas-instruments/UCC21540DW/9860890
-
-### 5.1 Comparacion UCC21540 contra el MSCSM120HM16CT3AG a 3 A
-
-| Punto de comparacion | Puente H `MSCSM120HM16CT3AG` | Driver `UCC21540` | Resultado | Que significa |
-| --- | --- | --- | --- | --- |
-| Numero de interruptores | 4 MOSFETs | 2 canales por integrado | Cumple con 2 integrados | Cada `UCC21540` puede manejar una rama del puente. |
-| Aislacion requerida | Alta por etapa de potencia flotante | 5.7 kVrms entrada-salida | Cumple | Aunque no usemos 1200 V, la aislacion mejora seguridad y robustez. |
-| Inmunidad `dv/dt` | SiC con conmutacion rapida | `>100 V/ns` o `125 V/ns` | Cumple | Reduce riesgo de pulsos falsos por transitorios. |
-| Corriente pico ON | 2.59 A estimada con 18 V | 4 A source | Cumple | Hay margen para cargar la compuerta. |
-| Corriente pico OFF | 3.37 A estimada con 18 V | 6 A sink | Cumple | Hay margen para apagar rapido. |
-| Corriente de carga | 3 A inicial | No depende directamente del driver | Cumple | El driver maneja compuerta, no corriente de potencia. |
-| Tension de compuerta ideal | `+20/-5 V` | Maximo 18 V totales | Parcial | Se debe aceptar `+18/0` o `+15/-3`. |
-| Proteccion de corto | Necesaria aunque sea a 3 A | No tiene DESAT integrado | Falta proteccion externa | Se debe agregar comparador/sensor hacia `DISABLE` y/o `BKIN`. |
-| Miller clamp | Deseable en SiC | No integrado | Requiere mitigacion externa | Usar bias negativo moderado, resistencias adecuadas o clamp externo. |
-| Dead-time | Obligatorio | Programable y tambien desde STM32 | Cumple | Debe configurarse en ambos niveles con criterio. |
-
-Conclusion: para una prueba inicial de `3 A`, el `UCC21540` es adecuado como driver si se limita la tension de compuerta a 18 V totales y se agregan protecciones externas.
-
-## 6. Ficha tecnica: SN6505BDBVR
-
-| Especificacion | Valor | Que significa para el proyecto |
-| --- | --- | --- |
-| Fabricante | Texas Instruments | Componente documentado y usado en referencias reales. |
-| Tipo | Driver push-pull para transformador | No entrega aislamiento solo; excita un transformador. |
-| Funcion | Generar fuente aislada con transformador externo | Permite alimentar cada lado flotante del driver. |
-| Entrada | 2.25 V a 5.5 V | Puede alimentarse desde una linea auxiliar de 3.3 V o 5 V; se recomienda 5 V. |
-| Corriente de salida primaria | 1 A a alimentacion de 5 V | Capacidad para excitar transformadores pequenos de fuente aislada. |
-| Frecuencia interna | 420 kHz en `SN6505B` | Permite transformador mas pequeno que versiones de menor frecuencia. |
-| `RDS(on)` interno | 0.25 ohm max a 4.5 V | Reduce perdida interna al manejar el transformador. |
-| Limite de corriente | 1.7 A | Protege el driver ante sobrecarga o arranque dificil. |
-| EMI | Slew-rate control y spread spectrum | Ayuda a reducir ruido en una placa con SiC. |
-| Sincronizacion | Permite reloj externo | Util si se quiere controlar ubicacion de armonicos. |
-| Protecciones | UVLO, limite de corriente, apagado termico, break-before-make, soft-start | Facilita arranque seguro de la fuente auxiliar. |
-| Shutdown | Menor que 1 uA | Permite apagar la fuente auxiliar con bajo consumo. |
-| Temperatura | -55 C a 125 C | Margen amplio para electronica cercana a potencia. |
-| Encapsulado | SOT-23-6 `DBV` | Pequeno, pero exige buen layout. |
-| Estado de compra | Activo en TI | Disponible para diseno nuevo. |
-
-Fuentes:
-
 - TI `SN6505BDBVR`: https://www.ti.com/product/SN6505B/part-details/SN6505BDBVR
 - Datasheet TI `SN6505A/SN6505B`: https://www.ti.com/lit/ds/symlink/sn6505a.pdf
-- Mouser `SN6505BDBVR`: https://www.mouser.com/ProductDetail/Texas-Instruments/SN6505BDBVR?qs=yajEpaT76uT%2FjUqvK%2B2rdw%3D%3D
-- DigiKey `SN6505BDBVR`: https://www.digikey.com/en/products/detail/texas-instruments/SN6505BDBVR/5994596
-
-### 6.1 Comparacion SN6505B contra la necesidad del puente H a 3 A
-
-| Punto de comparacion | Necesidad del sistema | `SN6505B` | Resultado | Que significa |
-| --- | --- | --- | --- | --- |
-| Fuente flotante para high-side | Necesaria | La permite con transformador | Cumple | El high-side necesita una fuente referida a su source flotante. |
-| Fuente para cuatro compuertas | 4 dominios o arquitectura equivalente | Depende del transformador y secundarios | Cumple si se disena bien | Se puede usar un transformador multisalida o varios SN6505B. |
-| Potencia de compuerta | 0.668 W a 20 kHz; 1.672 W a 50 kHz para 4 MOSFETs | Capacidad depende del transformador | Viable con margen | No basta escoger el IC; hay que escoger el transformador correcto. |
-| Aislacion | Necesaria para seguridad y nodos flotantes | La da el transformador | Depende del transformador | El transformador debe cumplir la aislacion requerida. |
-| EMI | Importante por SiC | Incluye slew-rate control y spread spectrum | Favorable | Ayuda a que la fuente auxiliar no agregue ruido excesivo. |
-| Relacion con 3 A | La carga inicial es baja | La fuente depende de compuerta, no de carga | No cambia mucho | Aunque se pruebe a 3 A, la compuerta del modulo sigue siendo grande. |
-
-## 7. Fuente aislada: por que sigue siendo necesaria
-
-Aunque no se vaya a usar el bus de `1200 V`, una fuente aislada sigue siendo conveniente porque:
-
-| Motivo | Explicacion corta | Impacto en este proyecto |
-| --- | --- | --- |
-| High-side flotante | El source del MOSFET superior se mueve con el nodo de conmutacion. | La alimentacion del driver debe moverse con ese nodo. |
-| Seguridad del control | La STM32 no debe compartir directamente la energia de potencia. | Reduce riesgo de dano al microcontrolador y al PC. |
-| Ruido de modo comun | El puente SiC genera transitorios rapidos. | Aislar ayuda a evitar que el ruido vuelva al control. |
-| Crecimiento futuro | El prototipo empieza a 3 A, pero puede subir tension/corriente. | La arquitectura no queda limitada a una prueba pequena. |
-
-Implementacion recomendada:
-
-```text
-5 V auxiliar
-  -> SN6505B
-  -> transformador push-pull aislado
-  -> rectificacion Schottky
-  -> filtrado local
-  -> regulacion/clamp
-  -> alimentacion VDDA/VSSA y VDDB/VSSB del UCC21540
-```
-
-Opciones de salida:
-
-| Opcion | Tension de compuerta | Ventaja | Riesgo / cuidado |
-| --- | --- | --- | --- |
-| Simple | `+18 V / 0 V` | Mas facil de implementar. | Menor inmunidad ante encendido parasitario por Miller. |
-| Recomendada para SiC | `+15 V / -3 V` | Mejora apagado sin superar 18 V totales. | Requiere generar referencia negativa bien controlada. |
-| No usar con UCC21540 | `+20 V / -5 V` | Coincide con datasheet del modulo. | Excede el maximo de 18 V del `UCC21540`. |
-
-## 8. Arquitectura recomendada para el prototipo de 3 A
-
-```text
-STM32G474
-  PWM_H1 / PWM_L1  -> UCC21540 #1 -> MOSFET alto/bajo rama A
-  PWM_H2 / PWM_L2  -> UCC21540 #2 -> MOSFET alto/bajo rama B
-
-5 V auxiliar -> SN6505B #1 + transformador -> fuente aislada driver rama A
-             -> SN6505B #2 + transformador -> fuente aislada driver rama B
-```
-
-| Bloque | Cantidad | Que hace | Por que se usa |
-| --- | --- | --- | --- |
-| `UCC21540DWR` | 2 | Maneja las cuatro compuertas del puente H. | Cada integrado tiene dos canales aislados. |
-| `SN6505BDBVR` | 2 recomendado | Genera fuentes aisladas para los drivers. | Un bloque por rama simplifica pruebas y layout. |
-| Transformador push-pull | 2 recomendado | Entrega energia aislada al secundario. | Es el elemento que realmente da aislamiento en la fuente. |
-| Rectificacion y filtrado | 2 o mas salidas | Convierte AC del transformador en DC estable. | El driver necesita alimentacion limpia. |
-| Proteccion de sobrecorriente | 1 sistema minimo | Apaga el puente si se supera el limite. | A 3 A se puede cortar antes de que una falla crezca. |
-| NTC del modulo | 1 medicion | Mide temperatura del modulo. | Permite detener pruebas si hay calentamiento anormal. |
-
-## 9. Protecciones recomendadas para empezar a 3 A
-
-| Proteccion | Valor / criterio inicial | Que significa |
-| --- | --- | --- |
-| Limite de corriente de laboratorio | 3 A | Valor objetivo de operacion inicial. |
-| Umbral de corte rapido | 3.5 A a 5 A | Margen para tolerancias sin permitir fallas grandes. |
-| Fusible o limitador de bus | Segun fuente DC usada | Barrera fisica si falla el control. |
-| Entrada `DISABLE` del UCC21540 | Conectada a comparador de falla | Permite apagar driver sin esperar firmware. |
-| Entrada `BKIN` de STM32 | Conectada a falla de corriente | Permite apagar PWM por hardware del temporizador. |
-| TVS/Zener gate-source | Dentro de -10 V a +25 V | Protege la compuerta del modulo. |
-| Dead-time inicial | Conservador, ajustar con osciloscopio | Evita que dos MOSFETs de la misma rama conduzcan a la vez. |
-| DC-link cercano al modulo | Capacitores de baja inductancia | Reduce sobrepicos en conmutacion. |
-| Medicion diferencial | Sonda diferencial / medicion segura | Evita cortos por tierra del osciloscopio. |
-
-## 10. Precios publicos y disponibilidad
-
-Precios consultados el 2026-05-14. No incluyen envio, impuestos, aranceles ni cambios de inventario.
-
-| Componente | Distribuidor | Estado | Precio unitario aproximado | Que significa | Link |
-| --- | --- | --- | --- | --- | --- |
-| `UCC21540DW` | Mouser | 510 en stock; EOL programado | USD 4.48 a 1 unidad; USD 3.40 a 10 unidades | Se consigue, pero no conviene para diseno nuevo si hay alternativa activa. | https://www.mouser.com/ProductDetail/Texas-Instruments/UCC21540DW?qs=byeeYqUIh0PZlHLK%252BqwDFA%3D%3D |
-| `UCC21540DW` | DigiKey | Obsolete; 171 en stock | USD 4.61 a 1 unidad; USD 3.503 a 10 unidades | Puede comprarse para pruebas, pero esta en salida de vida. | https://www.digikey.com/en/products/detail/texas-instruments/UCC21540DW/9860890 |
-| `UCC21540DWR` | TI / distribuidores | Activo | DigiKey lo lista como sustituto recomendado alrededor de USD 2.42 | Mejor opcion de compra para PCB nueva. | https://www.ti.com/product/UCC21540/part-details/UCC21540DWR |
-| `SN6505BDBVR` | Mouser | 12,388 en stock | USD 2.17 a 1 unidad; USD 1.60 a 10 unidades | Disponible y conveniente para comprar. | https://www.mouser.com/ProductDetail/Texas-Instruments/SN6505BDBVR?qs=yajEpaT76uT%2FjUqvK%2B2rdw%3D%3D |
-| `SN6505BDBVR` | DigiKey | Sin stock; backorder | USD 2.23 a 1 unidad; USD 1.653 a 10 unidades | Precio similar, pero peor disponibilidad al momento de consulta. | https://www.digikey.com/en/products/detail/texas-instruments/SN6505BDBVR/5994596 |
-
-Costo minimo estimado solo de ICs:
-
-| Arquitectura | Cantidad | Costo aproximado | Que significa |
-| --- | --- | --- | --- |
-| 2 x `UCC21540DW` + 2 x `SN6505BDBVR` | 2 drivers duales + 2 drivers de transformador | USD 13.30 con precios Mouser a 1 unidad | Opcion posible, pero usa UCC en estado EOL. |
-| 2 x `UCC21540DWR` + 2 x `SN6505BDBVR` | Empaque activo/recomendado | Alrededor de USD 9.04 usando sustituto DigiKey para UCC y Mouser para SN6505 | Mejor opcion de compra si se consigue inventario. |
-| 2 x `UCC21540DW` + 4 x `SN6505BDBVR` | Fuente independiente por canal | USD 17.64 con precios Mouser a 1 unidad | Mas modular, pero no necesario para el primer prototipo. |
-
-Faltan en el costo: transformadores, diodos Schottky, capacitores, resistencias de compuerta, TVS/Zener, conectores, sensores, comparadores y PCB.
-
-## 11. Decision tecnica actual
-
-Para un primer prototipo limitado a `3 A`, la seleccion queda aprobada con condiciones:
-
-| Decision | Eleccion | Que significa |
-| --- | --- | --- |
-| Driver principal | Dos `UCC21540DWR` | Manejan las cuatro compuertas del puente H. |
-| Fuente aislada | Dos `SN6505BDBVR` + transformadores | Alimentan las salidas flotantes de los drivers. |
-| Tension de compuerta inicial | `+15 V / -3 V` preferida, o `+18 V / 0 V` simple | Ambas respetan el limite de 18 V del `UCC21540`. |
-| Corriente inicial | 3 A | Mantiene bajas las perdidas y reduce riesgo en laboratorio. |
-| Bus DC inicial | Bajo y limitado, no 1200 V | El modulo lo soporta, pero no es necesario ni prudente al inicio. |
-| Frecuencia inicial | 20 kHz a 50 kHz | Balance entre filtro razonable, perdidas y dificultad de layout. |
-| Proteccion minima | Sobrecorriente por hardware + `DISABLE` + `BKIN` | No depender solo del firmware. |
-| Validacion | Osciloscopio con medicion segura | Verificar dead-time, VGS, ruido y temperatura antes de subir potencia. |
-
-La idea central es correcta: usar componentes que ya aparecen en una aplicacion real (`TIDA-010933`), pero adaptarlos al `MSCSM120HM16CT3AG` como una etapa inicial de `3 A`. El modulo queda sobrado en corriente; el diseno debe concentrarse en que las compuertas se manejen de forma limpia, aislada y protegida.
+- Referencia TI TIDA-010933: https://www.ti.com/tool/TIDA-010933
