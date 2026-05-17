@@ -23,3 +23,6 @@ venv/
 
 # Repositorios/datos externos clonados para clase
 TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/curso_IA_CHEC/
+
+# Respaldos locales
+TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/_backups/
