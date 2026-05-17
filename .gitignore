@@ -20,3 +20,6 @@ venv/
 *.out
 *.toc
 *.synctex.gz
+
+# Repositorios/datos externos clonados para clase
+TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/curso_IA_CHEC/
