@@ -2,28 +2,9 @@
 
 Fecha: 2026-05-19
 
-## 1. Para que sirve este documento
+Este documento plasma los cambios que se realizaron respecto al modelo del TIDA para adaptar la plantilla al inversor con modulo SiC `MSCSM120HM16CT3AG`.
 
-Este archivo es el registro maestro de decisiones del esquematico del inversor basado en el modulo SiC `MSCSM120HM16CT3AG`.
-
-Cada cambio importante debe quedar documentado aqui con:
-
-- que se cambio;
-- por que se cambio;
-- que dato de datasheet lo justifica;
-- que calculo se uso;
-- que se debe revisar en Altium y en banco.
-
-La primera revision documenta la adaptacion de la plantilla del microinverter TIDA al puente H SiC usando:
-
-- driver de compuerta `UCC21540DW`;
-- fuente aislada con `SN6505B`;
-- transformador `750342879`;
-- rectificadores `SS16`;
-- zener clamp `MMSZ5250B`;
-- alimentacion de gate inicial de `+18 V / 0 V`.
-
-## 2. Resumen ejecutivo de cambios
+## 1. Resumen ejecutivo de cambios
 
 La plantilla TIDA no se copia literalmente. Se conserva la arquitectura general, pero se cambian valores y algunos criterios para que sirvan al modulo SiC.
 
@@ -31,28 +12,28 @@ La plantilla TIDA no se copia literalmente. Se conserva la arquitectura general,
 | --- | --- | --- | --- |
 | Fuente de gate | `12 V` | `18 V` | Requerido |
 | Transformador fuente | `PAD002-T764113S`, `1:1.3` | `750342879` | Requerido |
-| Rectificador de fuente | topologia TIDA | Revisar topologia: `750342879` debe usarse como salida ~17.5 V, no como doblador TIDA | Correccion critica |
+| Rectificador de fuente | topologia TIDA | Se revisa la topologia: `750342879` se usa como salida ~17.5 V, no como doblador TIDA | Correccion critica |
 | Diodos rectificadores | `MBR0520`, `20 V` | `SS16`, `60 V`, `1 A` | Requerido |
 | Zener clamp | `16 V` | `MMSZ5250B`, `20 V` | Requerido |
 | Capacitores de salida fuente | `25 V` | `50 V` recomendado | Requerido |
 | Driver | `UCC21540DW` | Se conserva | OK |
 | `DT` | `20k` + capacitor | `20k` + `1 nF` | OK |
-| Entrada PWM | filtro de TIDA | usar filtro mas pequeno: `33R/51R` + `33pF/47pF` | Recomendado |
+| Entrada PWM | filtro de TIDA | Se usa filtro mas pequeno: `33R/51R` + `33pF/47pF` | Recomendado |
 | Red de gate | valores TIDA | `RGon = 4 ohm`, `RGoff = 2.4 ohm`, `RGS = 10k` | Requerido |
-| `Cgs` gate-source | `220 pF` | dejar footprint, no montar inicialmente | Recomendado |
+| `Cgs` gate-source | `220 pF` | Se deja footprint y no se monta inicialmente | Recomendado |
 
-### 2.1 Orden de trabajo en Altium
+### 1.1 Orden de trabajo en Altium
 
-Para no perderse, el diseno debe avanzar en este orden:
+El diseno avanza en este orden:
 
-1. Corregir primero las fuentes aisladas de gate.
-2. Confirmar que cada fuente entrega `18 V` entre su positivo aislado y su tierra aislada.
-3. Colocar un `UCC21540DW` por cada rama del puente H.
-4. Conectar `VDDA/VSSA` al MOSFET high-side de esa rama.
-5. Conectar `VDDB/VSSB` al MOSFET low-side de esa rama.
-6. Cambiar la red de gate a `RGon = 4 ohm`, `RGoff = 2.4 ohm`, `RGS = 10k` y `Cgs = DNP`.
-7. Mantener la parte digital del TIDA casi igual, pero verificando que `DISABLE` sea activo alto.
-8. Agregar puntos de prueba para medir cada `18V_x/GND_x` antes de conectar bus alto.
+1. Primero se corrigen las fuentes aisladas de gate.
+2. Se confirma que cada fuente entrega `18 V` entre su positivo aislado y su tierra aislada.
+3. Se coloca un `UCC21540DW` por cada rama del puente H.
+4. `VDDA/VSSA` se conectan al MOSFET high-side de esa rama.
+5. `VDDB/VSSB` se conectan al MOSFET low-side de esa rama.
+6. La red de gate se cambia a `RGon = 4 ohm`, `RGoff = 2.4 ohm`, `RGS = 10k` y `Cgs = DNP`.
+7. La parte digital del TIDA se mantiene casi igual, verificando que `DISABLE` sea activo alto.
+8. Se agregan puntos de prueba para medir cada `18V_x/GND_x` antes de conectar bus alto.
 
 Regla principal:
 
@@ -62,9 +43,9 @@ Despues se valida el driver.
 Al final se conecta el modulo SiC con bus DC bajo y corriente limitada.
 ```
 
-## 3. Datos de datasheet que gobiernan el diseno
+## 2. Datos de datasheet que gobiernan el diseno
 
-### 3.1 Modulo SiC MSCSM120HM16CT3AG
+### 2.1 Modulo SiC MSCSM120HM16CT3AG
 
 Datos relevantes por MOSFET:
 
@@ -72,7 +53,7 @@ Datos relevantes por MOSFET:
 | --- | ---: | --- |
 | Tipo | SiC MOSFET, puente H completo | Se requieren 4 salidas de compuerta |
 | `VDSS` | `1200 V` | Layout y aislamiento importan mucho |
-| `VGS` absoluto | `-10 V` a `+25 V` | El gate nunca debe pasar esos limites |
+| `VGS` absoluto | `-10 V` a `+25 V` | El gate no supera esos limites |
 | `RDS(on)` | `12.5 mohm` tipico, `16 mohm` max a `VGS = 20 V` | El MOSFET esta caracterizado con gate alto |
 | `VGS(th)` | `1.8 V` a `2.8 V` | No es tension de manejo, solo umbral |
 | `Qg` | `464 nC` | Dimensiona fuente y driver |
@@ -90,7 +71,7 @@ VGS_OFF = 0 V
 
 Esto queda dentro del limite absoluto `-10 V` a `+25 V`. No es identico a la condicion de caracterizacion del datasheet, pero es una primera version simple y compatible con el `UCC21540DW`.
 
-### 3.2 Driver UCC21540DW
+### 2.2 Driver UCC21540DW
 
 Datos relevantes:
 
@@ -105,7 +86,7 @@ Datos relevantes:
 | `DT` | `tDT(ns) = 10 * RDT(kohm)` | `20k` produce aprox `200 ns` |
 | Capacitor recomendado en `DT` | `1 nF` | Mejora inmunidad a ruido |
 
-### 3.3 Driver de transformador SN6505B
+### 2.3 Driver de transformador SN6505B
 
 Datos relevantes:
 
@@ -114,10 +95,10 @@ Datos relevantes:
 | `VCC` | `2.25 V` a `5.5 V` | Se alimenta desde `5 V`; no subir este pin |
 | Frecuencia SN6505B | aprox `424 kHz` tipica | Transformador debe ser compatible |
 | Corriente recomendada en switches | hasta `1 A` por `D1/D2` | Dimensiona potencia de fuente |
-| Limite de corriente interno | aprox `1.75 A` tipico | No usar como corriente normal |
+| Limite de corriente interno | aprox `1.75 A` tipico | No se usa como corriente normal |
 | Topologia | push-pull con primario center-tap | Requiere transformador compatible |
 
-## 4. Arquitectura electrica del puente H
+## 3. Arquitectura electrica del puente H
 
 El puente H tiene dos ramas. Cada rama se maneja con un `UCC21540DW`.
 
@@ -154,9 +135,9 @@ Opcion mas modular:
 
 Para esta etapa de diseno se mantiene la idea modular: cada dominio de gate debe tener una referencia clara. Lo mas importante es que cada `VSSx` del driver vaya a la referencia de source del MOSFET que maneja.
 
-## 5. Cambio 1: fuente aislada de 12 V a 18 V
+## 4. Cambio 1: fuente aislada de 12 V a 18 V
 
-### 5.1 Objetivo
+### 4.1 Objetivo
 
 La plantilla TIDA alimenta el driver con `12 V`. Para el modulo SiC se requiere una tension de gate mayor, por lo que se define:
 
@@ -171,18 +152,84 @@ VDDA - VSSA = 18 V
 VDDB - VSSB = 18 V
 ```
 
-### 5.2 Lo que NO se debe hacer
+### 4.2 Analisis: por que cambiar de 12 V a 18 V
 
-No se debe alimentar el `SN6505B` con mas de `5 V`.
+La fuente original del TIDA era de `12 V`, pero el modulo `MSCSM120HM16CT3AG` no esta caracterizado como interruptor de potencia a `12 V`. Los datos importantes del datasheet son:
+
+| Dato | Valor | Como se usa en el diseno |
+| --- | ---: | --- |
+| `VGS(th)` | `1.8 V` a `2.8 V` | Solo indica donde el MOSFET empieza a conducir poca corriente |
+| `VGS` absoluto | `-10 V` a `+25 V` | Limite que no se supera |
+| `RDS(on)` | `12.5 mohm` tipico, `16 mohm` max | Especificado con `VGS = 20 V` |
+| `Qg` | `464 nC` | Medido con `VGS = -5 V / +20 V`; se usa conservadoramente para dimensionar fuente y driver |
+| `RGint` | `2.94 ohm` | Se suma a la resistencia externa de gate |
+
+Comparacion electrica usando:
 
 ```text
-Correcto:  VCC_SN6505B = 5 V
-Incorrecto: subir VCC_SN6505B a 18 V
+VGS(th)_max = 2.8 V
+RGon  = 4 ohm
+RGoff = 2.4 ohm
+RGint = 2.94 ohm
+Qg    = 464 nC
+fsw   = 20 kHz
+```
+
+| Criterio | Formula | Caso 12 V | Caso 18 V | Lectura |
+| --- | --- | ---: | ---: | --- |
+| Margen sobre umbral | `Vdrive - VGS(th)_max` | `9.2 V` | `15.2 V` | `18 V` tiene `1.65x` mas margen de manejo |
+| Corriente pico de encendido | `Vdrive / (RGon + RGint)` | `1.73 A` | `2.59 A` | Ambos caben en `4 A source` del driver |
+| Corriente pico de apagado | `Vdrive / (RGoff + RGint)` | `2.25 A` | `3.37 A` | Ambos caben en `6 A sink` del driver |
+| Corriente promedio de gate | `Qg * fsw` | `9.28 mA` | `9.28 mA` | Calculo conservador usando `Qg` de datasheet |
+| Potencia de gate por MOSFET | `Qg * Vdrive * fsw` | `0.111 W` | `0.167 W` | `18 V` exige mas a la fuente, pero sigue siendo manejable |
+| Potencia de gate, 4 MOSFETs | `4 * Pgate` | `0.445 W` | `0.668 W` | La diferencia total es aprox `0.223 W` |
+| Capacitor local minimo | `(Qg + IVDD/fsw) / 0.5 V` | `1.18 uF` | `1.18 uF` | Se usan `4.7 uF + 100 nF` en ambos casos |
+
+La corriente promedio de gate se calcula igual en la tabla porque se usa el `Qg = 464 nC` del datasheet como peor caso. En la practica, con `12 V` el `Qg` real puede ser menor, pero eso no soluciona el problema principal: el MOSFET queda menos mejorado y puede aumentar `RDS(on)`.
+
+El datasheet entrega `RDS(on)` a `VGS = 20 V`, no entrega en la tabla principal el valor exacto a `VGS = 12 V`. Por eso `12 V` no se aprueba como condicion final de potencia sin curva o medicion. Para ver el impacto, se usa una estimacion de sensibilidad:
+
+```text
+RDS(on)_18V ~ 16 mohm   aproximacion conservadora cerca de condicion de datasheet
+RDS(on)_12V ~ 24 a 27 mohm si sube 1.5x a 1.7x
+Pcond = I^2 * RDS(on)
+```
+
+| Corriente por MOSFET | Perdida con 18 V, `16 mohm` | Perdida estimada con 12 V, `24-27 mohm` | Diferencia por MOSFET |
+| ---: | ---: | ---: | ---: |
+| `10 A` | `1.6 W` | `2.4 W` a `2.7 W` | `+0.8 W` a `+1.1 W` |
+| `20 A` | `6.4 W` | `9.6 W` a `10.8 W` | `+3.2 W` a `+4.4 W` |
+| `40 A` | `25.6 W` | `38.4 W` a `43.2 W` | `+12.8 W` a `+17.6 W` |
+
+Conclusion de esta comparacion:
+
+| Opcion | Ventaja | Desventaja | Decision |
+| --- | --- | --- | --- |
+| `12 V` | Menor consumo en gate y menor exigencia a la fuente | MOSFET menos mejorado, posible mayor `RDS(on)`, mas calor en potencia | Sirve para pruebas suaves, no como punto final |
+| `18 V` | Mas cerca de `VGS = 20 V` de datasheet, menor perdida por conduccion esperada | Mayor consumo de gate y conmutacion mas fuerte | Punto inicial recomendado |
+| `20 V` | Mas cercano a caracterizacion del datasheet | Menor margen contra limite absoluto `+25 V` | Posible mejora futura con buen control de transitorios |
+| `+20 V / -5 V` | Mejor inmunidad contra encendido Miller | Requiere fuente bipolar mas compleja | Mejora futura si las pruebas lo exigen |
+
+Decision del proyecto:
+
+```text
+Se usa +18 V / 0 V como primera version de gate drive.
+No se usa 12 V como alimentacion final de potencia.
+Se deja opcion futura de gate bipolar si aparece encendido falso por dv/dt.
+```
+
+### 4.3 Restriccion del SN6505B
+
+El `SN6505B` no se alimenta con mas de `5 V`.
+
+```text
+Conexion correcta:    VCC_SN6505B = 5 V
+Conexion incorrecta:  VCC_SN6505B = 18 V
 ```
 
 La subida de tension se logra con el transformador y la rectificacion, no subiendo el pin `VCC` del `SN6505B`.
 
-### 5.3 Correccion critica sobre el transformador 750342879
+### 4.4 Correccion critica sobre el transformador 750342879
 
 El transformador `750342879` esta pensado para obtener una salida alrededor de `17 V` a `17.5 V` desde `5 V` con `SN6505B`.
 
@@ -197,13 +244,13 @@ Pero si se copia exactamente el rectificador doblador del TIDA y ademas se usa `
 Decision:
 
 ```text
-Usar 750342879 con topologia de rectificacion adecuada para salida ~18 V.
-No usarlo como si fuera el transformador 1:1.3 del TIDA en una etapa dobladora sin recalcular.
+Se usa 750342879 con topologia de rectificacion adecuada para salida ~18 V.
+No se usa como si fuera el transformador 1:1.3 del TIDA en una etapa dobladora sin recalcular.
 ```
 
-### 5.4 Topologia recomendada para la fuente de 18 V
+### 4.5 Topologia recomendada para la fuente de 18 V
 
-Para usar el `750342879`, la topologia recomendada es la rectificacion estandar de secundario con center-tap:
+Con el `750342879`, la topologia recomendada es la rectificacion estandar de secundario con center-tap:
 
 ```text
 Secundario pin 1 -> anodo D1
@@ -221,9 +268,9 @@ catodo MMSZ5250B -> +18V_ISO
 anodo  MMSZ5250B -> GND_ISO
 ```
 
-Si en el esquematico actual el secundario todavia esta conectado como la red del TIDA con dos capacitores apilados, hay que corregirlo o cambiar el transformador por uno de menor relacion.
+Si en el esquematico actual el secundario todavia esta conectado como la red del TIDA con dos capacitores apilados, se corrige esa topologia o se cambia el transformador por uno de menor relacion.
 
-### 5.5 Componentes seleccionados para la fuente
+### 4.6 Componentes seleccionados para la fuente
 
 | Funcion | Componente | Valor/rating | Revision |
 | --- | --- | --- | --- |
@@ -234,7 +281,7 @@ Si en el esquematico actual el secundario todavia esta conectado como la red del
 | Capacitores salida | MLCC | `50 V` recomendado | OK |
 | Carga minima opcional | `10k` | `1.8 mA`, `32 mW` | Recomendado |
 
-### 5.6 Calculo de corriente de salida requerida
+### 4.7 Calculo de corriente de salida requerida
 
 A `20 kHz`, por MOSFET:
 
@@ -266,7 +313,7 @@ Margen recomendado: 50 mA
 
 Si el transformador seleccionado esta especificado para alrededor de `100 mA`, hay margen suficiente para una primera version a `20 kHz`.
 
-### 5.7 Carga minima
+### 4.8 Carga minima
 
 Para que la fuente no quede completamente en vacio:
 
@@ -276,11 +323,11 @@ I = 18 V / 10k = 1.8 mA
 P = 18 V * 1.8 mA = 32.4 mW
 ```
 
-Usar resistencia `0603` de `0.1 W` minimo o mayor.
+Se usa resistencia `0603` de `0.1 W` minimo o mayor.
 
-### 5.8 Verificacion obligatoria en banco
+### 4.9 Verificacion obligatoria en banco
 
-Antes de conectar al `UCC21540`, medir:
+Antes de conectar al `UCC21540`, se miden:
 
 ```text
 Vout sin carga
@@ -301,9 +348,9 @@ Vout debe estar cerca de 18 V bajo carga.
 El zener de 20 V no debe regular de forma permanente.
 ```
 
-## 6. Cambio 2: alimentacion y desacoplo del UCC21540
+## 5. Cambio 2: alimentacion y desacoplo del UCC21540
 
-### 6.1 Lado logico
+### 5.1 Lado logico
 
 Se conserva la parte digital de la plantilla TIDA:
 
@@ -335,9 +382,58 @@ DIS = 1 -> salidas apagadas
 DIS = 0 -> salidas habilitadas
 ```
 
-Si la red se llama `ENABLE`, verificar si esta invertida.
+Si la red se llama `ENABLE`, se verifica si esta invertida.
 
-### 6.2 Lado de potencia del driver
+#### 5.1.1 Analisis de resistencias y capacitores del lado logico
+
+La parte logica del TIDA se puede conservar como arquitectura, pero los valores se revisan para no filtrar demasiado las senales PWM.
+
+| Bloque | Valor TIDA / referencia | Valor recomendado inicial | Calculo o criterio | Decision |
+| --- | --- | --- | --- | --- |
+| Desacoplo `VCCI` | `100 nF` | `100 nF` cerca de pines `3/8` a `GND` | capacitor local de alta frecuencia para el lado logico | Se conserva |
+| Resistencia serie PWM | depende de plantilla | `33 ohm` a `51 ohm` | limita ringing y corriente de entrada sin crear retardo grande | Se cambia si el TIDA usa valores altos |
+| Capacitor PWM a GND | `220 pF` en TIDA | `33 pF` a `47 pF` inicial | menor retardo y menor distorsion de PWM | Recomendado |
+| `RDT` | `20k` | `20k` | `tDT(ns) = 10 * RDT(kohm)` | Se conserva |
+| `CDT` | capacitor pequeno | `1 nF` | recomendado para inmunidad de ruido en `DT` | Se conserva |
+| `DISABLE` pull/red RC | TIDA | Se revisa polaridad | `DIS = 1` apaga, `DIS = 0` habilita | Se verifica nombre `ENABLE` |
+
+Calculo del filtro PWM recomendado:
+
+```text
+tau = R * C
+fc = 1 / (2*pi*R*C)
+```
+
+| R serie | C a GND | `tau` | `fc` aproximada | Comentario |
+| ---: | ---: | ---: | ---: | --- |
+| `33 ohm` | `33 pF` | `1.09 ns` | `146 MHz` | Filtra ruido muy alto, casi no deforma PWM |
+| `51 ohm` | `47 pF` | `2.40 ns` | `66 MHz` | Buen punto inicial |
+| `51 ohm` | `220 pF` | `11.2 ns` | `14.2 MHz` | Mas lento; se usa solo si el ruido lo exige |
+| `100 ohm` | `220 pF` | `22 ns` | `7.23 MHz` | Evitar si no hay razon de ruido |
+
+Decision:
+
+```text
+Para PWM se usan inicialmente 33R/33pF o 51R/47pF.
+No se usan capacitores grandes en PWM sin medir retardo y forma de onda.
+```
+
+Calculo de dead-time:
+
+```text
+tDT(ns) = 10 * RDT(kohm)
+tDT = 10 * 20 = 200 ns
+```
+
+Resultado:
+
+| `RDT` | `tDT` aproximado | Decision |
+| ---: | ---: | --- |
+| `20k` | `200 ns` | Valor inicial razonable para pruebas |
+
+El dead-time final debe validarse con osciloscopio midiendo las compuertas reales. Si hay shoot-through, se aumenta. Si hay mucha conduccion por diodo/body diode, se optimiza.
+
+### 5.2 Lado de potencia del driver
 
 Por cada medio puente:
 
@@ -362,7 +458,7 @@ Rating recomendado:
 50 V
 ```
 
-### 6.3 Calculo minimo del capacitor local de VDD
+### 5.3 Calculo minimo del capacitor local de VDD
 
 La carga que debe entregar el capacitor en un evento de conmutacion es aproximadamente:
 
@@ -392,12 +488,27 @@ Cmin = 1.18 uF
 Decision:
 
 ```text
-Usar 4.7 uF + 100 nF por cada VDDA/VSSA y VDDB/VSSB.
+Se usan 4.7 uF + 100 nF por cada VDDA/VSSA y VDDB/VSSB.
 ```
 
 Esto deja margen frente a perdida de capacitancia por DC bias en MLCC.
 
-## 7. Cambio 3: red de gate para el modulo SiC
+Tabla de seleccion de capacitores:
+
+| Capacitor | Funcion | Valor | Rating | Criterio |
+| --- | --- | ---: | ---: | --- |
+| `100 nF` | alta frecuencia, pico local del driver | `0.1 uF` | `50 V` | debe ir pegado a `VDDx/VSSx` |
+| `4.7 uF` | reserva local de carga de gate | `4.7 uF` | `50 V` | mayor que `Cmin = 1.18 uF` |
+| `10 uF` en fuente aislada | almacenamiento despues de rectificacion/filtro | `10 uF` | `50 V` | reduce rizado de la fuente |
+
+Regla de layout:
+
+```text
+El capacitor local del UCC21540 no reemplaza al capacitor de la fuente.
+La fuente necesita sus capacitores, y el driver necesita sus propios capacitores pegados al integrado.
+```
+
+## 6. Cambio 3: red de gate para el modulo SiC
 
 La red de gate de TIDA no se copia con sus valores originales porque estaba ajustada para otros MOSFETs.
 
@@ -407,7 +518,7 @@ Valores iniciales para el modulo `MSCSM120HM16CT3AG`:
 RGon  = 4 ohm
 RGoff = 2.4 ohm
 RGS   = 10k
-Cgs   = DNP inicial, dejar footprint
+Cgs   = DNP inicial, con footprint disponible
 ```
 
 Conexion por MOSFET:
@@ -425,7 +536,7 @@ encendido -> use RGon = 4 ohm
 apagado   -> use RGoff = 2.4 ohm
 ```
 
-### 7.1 Calculo de corriente pico
+### 6.1 Calculo de corriente pico: 12 V vs 18 V
 
 Estimacion simple, sin incluir la resistencia interna completa del driver:
 
@@ -437,29 +548,21 @@ Igate_off = Vdrive / (RGoff + RGint)
 Con:
 
 ```text
-Vdrive = 18 V
 RGon   = 4 ohm
 RGoff  = 2.4 ohm
 RGint  = 2.94 ohm
 ```
 
-Resultados:
+Tabla de calculo:
 
-```text
-Igate_on = 18 / (4 + 2.94) = 2.59 A
-Igate_off = 18 / (2.4 + 2.94) = 3.37 A
-```
-
-Comparacion:
-
-| Caso | Corriente estimada | Limite UCC21540 | Resultado |
-| --- | ---: | ---: | --- |
-| Encendido | `2.59 A` | `4 A source` | OK |
-| Apagado | `3.37 A` | `6 A sink` | OK |
+| `Vdrive` | `Igate_on = V/(4 + 2.94)` | Limite source UCC21540 | `Igate_off = V/(2.4 + 2.94)` | Limite sink UCC21540 | Resultado |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| `12 V` | `1.73 A` | `4 A` | `2.25 A` | `6 A` | OK, pero menor fuerza de manejo |
+| `18 V` | `2.59 A` | `4 A` | `3.37 A` | `6 A` | OK, mejor manejo del SiC |
 
 La corriente real sera menor por resistencia interna del driver y parasitos de layout, asi que estos valores son aceptables como punto inicial.
 
-### 7.2 Calculo de potencia de gate
+### 6.2 Calculo de potencia de gate: 12 V vs 18 V
 
 Por MOSFET:
 
@@ -471,14 +574,20 @@ Con:
 
 ```text
 Qg = 464 nC
-Vdrive = 18 V
 ```
 
-| Frecuencia | Corriente promedio gate | Potencia por MOSFET | Potencia 4 MOSFETs |
-| ---: | ---: | ---: | ---: |
-| `20 kHz` | `9.28 mA` | `0.167 W` | `0.668 W` |
-| `50 kHz` | `23.2 mA` | `0.418 W` | `1.672 W` |
-| `100 kHz` | `46.4 mA` | `0.835 W` | `3.340 W` |
+| Frecuencia | `Igate_prom = Qg*fsw` | `Pgate` por MOSFET a `12 V` | `Pgate` 4 MOSFETs a `12 V` | `Pgate` por MOSFET a `18 V` | `Pgate` 4 MOSFETs a `18 V` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| `20 kHz` | `9.28 mA` | `0.111 W` | `0.445 W` | `0.167 W` | `0.668 W` |
+| `50 kHz` | `23.2 mA` | `0.278 W` | `1.114 W` | `0.418 W` | `1.672 W` |
+| `100 kHz` | `46.4 mA` | `0.557 W` | `2.227 W` | `0.835 W` | `3.340 W` |
+
+Lectura:
+
+```text
+18 V aumenta la potencia de gate 50 % frente a 12 V.
+Ese aumento es pequeno comparado con la posible reduccion de perdida por conduccion del MOSFET.
+```
 
 Decision inicial:
 
@@ -486,38 +595,40 @@ Decision inicial:
 fsw inicial sugerida = 20 kHz
 ```
 
-## 8. Checklist para corregir el esquematico
+## 7. Checklist de correccion del esquematico
 
 ### Fuente aislada
 
-- No subir `VCC` del `SN6505B`; mantenerlo en `5 V`.
-- Usar `750342879` solo con topologia que entregue alrededor de `18 V`.
-- Si se conserva la topologia dobladora del TIDA, recalcular transformador; no usar `750342879` sin cambiar la rectificacion.
-- Usar `SS16` o Schottky equivalente de al menos `60 V`.
-- Usar `MMSZ5250B` con catodo al positivo y anodo a GND aislado.
-- Usar capacitores de salida de `50 V`.
-- Dejar carga minima opcional `10k`.
+- `VCC` del `SN6505B` se mantiene en `5 V`.
+- `750342879` se usa solo con topologia que entregue alrededor de `18 V`.
+- Si se conserva la topologia dobladora del TIDA, se recalcula el transformador; `750342879` no se usa sin cambiar la rectificacion.
+- `SS16` se usa como Schottky equivalente de al menos `60 V`.
+- `MMSZ5250B` se conecta con catodo al positivo y anodo a GND aislado.
+- Los capacitores de salida se seleccionan de `50 V`.
+- La carga minima opcional queda en `10k`.
 
 ### Driver UCC21540
 
-- Usar un `UCC21540DW` por rama.
+- Se usa un `UCC21540DW` por rama.
 - `INA` corresponde al high-side de la rama.
 - `INB` corresponde al low-side de la rama.
 - `DIS` es activo alto.
 - `RDT = 20k`.
 - `CDT = 1 nF`.
+- Filtro PWM inicial: `33R/33pF` o `51R/47pF`.
+- Evitar `220 pF` en PWM como valor por defecto si no se mide el retardo.
 - `VCCI` con `100 nF` cerca del pin.
 - `VDDA/VSSA` y `VDDB/VSSB` con `100 nF + 4.7 uF`.
 
 ### Red de gate
 
-- Cambiar valores TIDA por `RGon = 4 ohm` y `RGoff = 2.4 ohm`.
-- Mantener `RGS = 10k`.
-- Dejar `Cgs` como DNP inicial.
-- Verificar orientacion de los diodos de gate.
-- Conectar `VSSx` al source de su MOSFET, idealmente al pin Kelvin/source de senal si el modulo lo ofrece.
+- Los valores TIDA se cambian por `RGon = 4 ohm` y `RGoff = 2.4 ohm`.
+- `RGS` se mantiene en `10k`.
+- `Cgs` queda como DNP inicial.
+- Se verifica la orientacion de los diodos de gate.
+- `VSSx` se conecta al source de su MOSFET, idealmente al pin Kelvin/source de senal si el modulo lo ofrece.
 
-## 9. Criterio de layout
+## 8. Criterio de layout
 
 El lazo critico es:
 
@@ -531,18 +642,20 @@ Prioridades:
 2. Resistencias de gate cerca del gate o en ruta muy corta.
 3. Capacitores `VDDx-VSSx` pegados al driver.
 4. Retorno de source separado del retorno de potencia siempre que el modulo lo permita.
-5. No colocar cobre bajo la barrera de aislamiento del driver.
-6. Mantener distancia entre dominios high-side, low-side y logica.
+5. No se coloca cobre bajo la barrera de aislamiento del driver.
+6. Se mantiene distancia entre dominios high-side, low-side y logica.
 
-## 10. Estado de decisiones
+## 9. Estado de decisiones
 
 | Decision | Valor actual | Estado |
 | --- | --- | --- |
 | Gate drive inicial | `+18 V / 0 V` | Aprobado para primera version |
-| Fuente aislada | `SN6505B + 750342879` | Aprobado condicional: corregir topologia y confirmar pinout |
+| Gate drive `12 V / 0 V` | Solo pruebas suaves | No aprobado como punto final de potencia |
+| Fuente aislada | `SN6505B + 750342879` | Aprobado condicional: se corrige topologia y se confirma pinout |
 | Rectificadores | `SS16` | Aprobado |
 | Clamp | `MMSZ5250B`, `20 V` | Aprobado como proteccion |
 | Driver | `UCC21540DW` | Aprobado |
+| Filtro PWM | `33R/33pF` o `51R/47pF` | Aprobado inicial |
 | `RGon` | `4 ohm` | Aprobado inicial |
 | `RGoff` | `2.4 ohm` | Aprobado inicial |
 | `RGS` | `10k` | Aprobado |
@@ -550,18 +663,18 @@ Prioridades:
 | `RDT/CDT` | `20k / 1 nF` | Aprobado |
 | Frecuencia inicial | `20 kHz` | Aprobado para pruebas |
 
-## 11. Pendientes antes de fabricar PCB
+## 10. Pendientes antes de fabricar PCB
 
-- Corregir o confirmar topologia de la fuente de `18 V` con `750342879`.
-- Confirmar pinout real del secundario del `750342879` en el simbolo de Altium.
-- Confirmar footprint y polaridad de `MMSZ5250B`.
-- Confirmar footprint y orientacion de `SS16`.
+- Se corrige o confirma la topologia de la fuente de `18 V` con `750342879`.
+- Se confirma el pinout real del secundario del `750342879` en el simbolo de Altium.
+- Se confirma footprint y polaridad de `MMSZ5250B`.
+- Se confirma footprint y orientacion de `SS16`.
 - Definir si las fuentes low-side seran compartidas o separadas por rama.
-- Validar que el modulo tenga pines Kelvin/source de senal y usarlos para `VSSx`.
-- Medir la fuente aislada en banco antes de conectar el driver.
+- Validar que el modulo tenga pines Kelvin/source de senal y que estos se usen para `VSSx`.
+- La fuente aislada se mide en banco antes de conectar el driver.
 - Probar el driver inicialmente sin bus alto, con fuente limitada y carga controlada.
 
-## 12. Fuentes consultadas
+## 11. Fuentes consultadas
 
 - Datasheet local: `C:\Users\juanv\Downloads\Microsemi_MSCSM120HM16CT3AG_Full_BridgeSiC_MOSFET_Power_Module_Rv1.0.pdf`
 - Datasheet local: `C:\Users\juanv\Downloads\ucc21540.pdf`
