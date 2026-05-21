@@ -20,6 +20,8 @@ class SDRDevice:
 
         self.sdr.sample_rate = config.sample_rate_hz
         self.sdr.center_freq = config.center_freq_hz
+        if config.freq_correction_ppm:
+            self.sdr.freq_correction = config.freq_correction_ppm
         self.sdr.gain = config.gain_db
 
     def read_samples(self, sample_count):

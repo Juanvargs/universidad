@@ -46,10 +46,12 @@ class FMDemodulator:
         self.audio_decim_filter_state = None
         self.audio_decim = None
         self.deemphasis_tau = 50e-6
+        self.channel_filter_cutoff_hz = None
 
     def reset(self, config):
         self.audio_rate_hz = config.audio_rate_hz
         self.channel_rate_hz = config.channel_rate_hz
+        self.channel_filter_cutoff_hz = config.channel_filter_cutoff_hz
         self.deemphasis_state = 0.0
         self.audio_level = 0.15
         self.deemphasis_tau = config.deemphasis_us * 1e-6
@@ -70,7 +72,11 @@ class FMDemodulator:
         if len(iq_samples) < 2:
             return np.array([], dtype=np.float32)
 
-        if self.audio_rate_hz != config.audio_rate_hz or self.channel_rate_hz != config.channel_rate_hz:
+        if (
+            self.audio_rate_hz != config.audio_rate_hz
+            or self.channel_rate_hz != config.channel_rate_hz
+            or self.channel_filter_cutoff_hz != config.channel_filter_cutoff_hz
+        ):
             self.reset(config)
 
         channel_iq = self._channelize(iq_samples, config)
@@ -132,7 +138,7 @@ class FMDemodulator:
             return
 
         self.channel_decim = sample_rate_hz // config.channel_rate_hz
-        cutoff_hz = min(120_000.0, 0.88 * (config.channel_rate_hz / 2))
+        cutoff_hz = min(config.channel_filter_cutoff_hz, 0.88 * (config.channel_rate_hz / 2))
         self.channel_filter_sos = butter(
             6,
             cutoff_hz,
