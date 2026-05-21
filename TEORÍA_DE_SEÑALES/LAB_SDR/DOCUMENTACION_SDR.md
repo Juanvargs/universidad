@@ -335,12 +335,3 @@ python scripts/run_app.py
 - No hay grabacion de IQ o audio.
 - No hay archivo `requirements.txt` en el directorio.
 
-## Puntos recomendados para ampliar
-
-- Agregar controles para ganancia, volumen y deemphasis.
-- Agregar un cursor o selector de canal para demodular una frecuencia desplazada
-  dentro del span.
-- Agregar waterfall para observar ocupacion espectral en el tiempo.
-- Crear `requirements.txt` para reproducibilidad.
-- Permitir grabar audio demodulado en WAV.
-- Guardar configuraciones frecuentes.
