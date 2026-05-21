@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RTL-SDR Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <div class="brand-mark">SDR</div>
+          <div>
+            <p class="eyebrow">Laboratorio RF</p>
+            <h1>RTL-SDR Dashboard</h1>
+          </div>
+        </div>
+
+        <form id="configForm" class="control-panel">
+          <div class="section-heading">
+            <span>Configuracion</span>
+            <strong id="statePill" class="state-pill idle">Detenido</strong>
+          </div>
+
+          <label class="field">
+            <span>FC</span>
+            <div class="input-wrap">
+              <input id="fc_mhz" name="fc_mhz" type="number" step="0.001" min="24" max="1766" required />
+              <small>MHz</small>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Span</span>
+            <div class="input-wrap">
+              <input id="span_mhz" name="span_mhz" type="number" step="0.01" min="0.25" max="3.2" required />
+              <small>MHz</small>
+            </div>
+          </label>
+
+          <div class="dual-grid">
+            <label class="field">
+              <span>Fine tune</span>
+              <div class="input-wrap">
+                <input id="fine_tune_khz" name="fine_tune_khz" type="number" step="1" min="-150" max="150" required />
+                <small>kHz</small>
+              </div>
+            </label>
+            <label class="field">
+              <span>PPM</span>
+              <input id="freq_correction_ppm" name="freq_correction_ppm" type="number" step="1" min="-100" max="100" required />
+            </label>
+          </div>
+
+          <div class="dual-grid">
+            <label class="field">
+              <span>Ganancia</span>
+              <div class="input-wrap">
+                <input id="gain_db" name="gain_db" type="number" step="0.1" min="0" max="49.6" required />
+                <small>dB</small>
+              </div>
+            </label>
+            <label class="field">
+              <span>Deemphasis</span>
+              <select id="deemphasis_us" name="deemphasis_us" required>
+                <option value="75">75 us</option>
+                <option value="50">50 us</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="dual-grid">
+            <label class="field">
+              <span>NFFT</span>
+              <input id="nfft" name="nfft" type="number" step="256" min="256" required />
+            </label>
+            <label class="field">
+              <span>Nperseg</span>
+              <input id="nperseg" name="nperseg" type="number" step="256" min="256" required />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Noverlap</span>
+            <input id="noverlap" name="noverlap" type="number" step="128" min="0" required />
+          </label>
+
+          <div class="button-row">
+            <button id="startButton" class="primary-button" type="submit">
+              <span class="button-icon">▶</span>
+              Iniciar / aplicar
+            </button>
+            <button id="stopButton" class="stop-button" type="button">
+              <span class="button-icon">■</span>
+              Detener
+            </button>
+          </div>
+        </form>
+
+        <div class="status-panel">
+          <p class="panel-label">Estado del sistema</p>
+          <p id="statusText" class="status-text">Conectando con el servidor...</p>
+          <div class="meter-block">
+            <div class="meter-label">
+              <span>Buffer</span>
+              <strong id="bufferValue">0 ms</strong>
+            </div>
+            <div class="meter-track"><div id="bufferMeter" class="meter-fill buffer"></div></div>
+          </div>
+          <div class="meter-block">
+            <div class="meter-label">
+              <span>Nivel audio</span>
+              <strong id="audioValue">0%</strong>
+            </div>
+            <div class="meter-track"><div id="audioMeter" class="meter-fill audio"></div></div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Monitor en tiempo real</p>
+            <h2>Espectro y audio demodulado</h2>
+          </div>
+          <div class="quick-stats">
+            <div class="stat-card accent-cyan">
+              <span>Sample rate</span>
+              <strong id="sampleRate">--</strong>
+            </div>
+            <div class="stat-card accent-violet">
+              <span>Ancho banda</span>
+              <strong id="bandwidth">--</strong>
+            </div>
+            <div class="stat-card accent-green">
+              <span>Bloques</span>
+              <strong id="blocksRead">0</strong>
+            </div>
+            <div class="stat-card accent-amber">
+              <span>Underruns</span>
+              <strong id="underruns">0</strong>
+            </div>
+            <div class="stat-card accent-rose">
+              <span>Descartes</span>
+              <strong id="dropped">0 ms</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="chart-grid">
+          <article class="chart-card spectrum-card">
+            <div class="chart-title">
+              <div>
+                <p class="eyebrow">PSD</p>
+                <h3>Densidad espectral de potencia</h3>
+              </div>
+              <span id="psdRange" class="chart-chip">-- MHz</span>
+            </div>
+            <canvas id="psdCanvas"></canvas>
+          </article>
+
+          <article class="chart-card audio-card">
+            <div class="chart-title">
+              <div>
+                <p class="eyebrow">Audio</p>
+                <h3>Forma de onda demodulada</h3>
+              </div>
+              <span id="audioPeak" class="chart-chip">Pico 0.00</span>
+            </div>
+            <canvas id="audioCanvas"></canvas>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

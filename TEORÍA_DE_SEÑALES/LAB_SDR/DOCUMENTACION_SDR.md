@@ -1,14 +1,19 @@
 # Documentacion del software SDR
 
-Este proyecto implementa una aplicacion de escritorio en Python para visualizar la
-densidad espectral de potencia (PSD) de una senal recibida con RTL-SDR y escuchar
-audio FM demodulado a partir de las muestras IQ.
+Este proyecto implementa una aplicacion de escritorio en Python para recibir
+señales con un RTL-SDR, visualizar la densidad espectral de potencia (PSD),
+demodular FM en tiempo real y reproducir el audio resultante.
 
-## Diagrama general
+## 1. Visión general del sistema
+
+El sistema recibe muestras IQ complejas del RTL-SDR, calcula una PSD de la
+señal, demodula FM y reproduce audio.
+
+Diagrama general:
 
 ```mermaid
 flowchart LR
-    Usuario[Usuario] --> UI[Interfaz Tkinter<br/>frontend/interface.py]
+    Usuario --> UI[Interfaz Tkinter<br/>frontend/interface.py]
     UI --> Config[SDRConfig<br/>backend/config.py]
     UI --> Device[SDRDevice<br/>backend/sdr_device.py]
     UI --> Worker[AcquisitionWorker<br/>backend/acquisition.py]
@@ -30,18 +35,7 @@ flowchart LR
     PlotAudio --> UI
 ```
 
-## Objetivo
-
-La aplicacion sirve para:
-
-- Sintonizar una frecuencia central en MHz.
-- Ajustar el ancho de observacion o `span`.
-- Visualizar la PSD alrededor de la frecuencia central.
-- Demodular FM en tiempo real desde las muestras IQ recibidas.
-- Reproducir el audio demodulado.
-- Verificar la lectura del dispositivo RTL-SDR y probar la salida de audio.
-
-## Estructura del proyecto
+## 2. Estructura del proyecto
 
 ```text
 lab_sdr/
@@ -59,205 +53,275 @@ lab_sdr/
     └── sdr_device.py          # Wrapper del dispositivo RTL-SDR
 ```
 
-## Flujo de ejecucion
+## 3. Descripción de cada archivo
 
-1. `scripts/run_app.py` agrega la raiz del proyecto al `sys.path` y llama
-   `frontend.interface.run_app()`.
-2. `SDRApp` crea la ventana principal, los controles, las graficas y los objetos
-   de backend.
-3. Al presionar **Iniciar**, la interfaz:
-   - Lee los parametros de la UI.
-   - Valida la configuracion.
-   - Abre y configura el RTL-SDR.
-   - Crea un `AcquisitionWorker` en un hilo de fondo.
-4. El hilo de adquisicion lee bloques IQ desde `SDRDevice.read_samples()`.
-5. Cada bloque IQ se guarda en `IQBuffer` para la grafica PSD.
-6. El mismo bloque IQ pasa por `FMDemodulator.demodulate()` para obtener audio.
-7. El audio demodulado se guarda en `AudioBuffer`, se envia a la grafica de audio
-   y se reproduce mediante `AudioOutput`.
-8. La UI se actualiza periodicamente con `root.after()`:
-   - PSD aproximadamente cada 150 ms.
-   - Forma de onda de audio aproximadamente cada 40 ms.
+### `lab_sdr.py`
 
-## Modulos principales
+Punto de entrada sencillo que ejecuta `scripts/run_app.py`.
+
+### `scripts/run_app.py`
+
+Agrega la raíz del proyecto a `sys.path` y arranca la aplicación con
+`frontend.interface.run_app()`.
+
+### `frontend/interface.py`
+
+Construye la interfaz gráfica con Tkinter y Matplotlib.
+
+- Panel de parámetros y controles.
+- Panel de gráfica PSD.
+- Panel de gráfica de audio demodulado.
+- Lógica de inicio/parada, verificación del SDR y prueba de audio.
+- Actualización periódica de las gráficas y el estado.
 
 ### `backend/config.py`
 
-Define `SDRConfig`, una dataclass con los parametros de operacion:
+Define la configuración de operación (`SDRConfig`) y valida los rangos.
+
+Parámetros importantes:
 
 - `fc_mhz`: frecuencia central en MHz.
-- `span_mhz`: tasa de muestreo del SDR y ancho visualizado.
-- `nperseg`: tamano de segmento usado por Welch para la PSD.
-- `noverlap`: solapamiento entre segmentos Welch.
+- `span_mhz`: ancho de banda / sample rate del SDR.
+- `nperseg`: tamaño de segmento para Welch.
+- `noverlap`: solapamiento en Welch.
 - `gain_db`: ganancia del RTL-SDR.
+- `freq_correction_ppm`: corrección de frecuencia del oscilador.
+- `fine_tune_khz`: ajuste fino en kHz.
 - `channel_rate_hz`: tasa intermedia para el canal FM.
-- `audio_rate_hz`: tasa final de audio.
-- `psd_buffer_samples`: muestras maximas usadas para calcular PSD.
-- `psd_alpha`: factor de suavizado exponencial de PSD.
-- `audio_volume`: ganancia final de audio.
-- `deemphasis_us`: constante de deemphasis FM.
-
-Tambien valida rangos importantes, por ejemplo frecuencia central, span,
-`nperseg`, `noverlap`, tamanos de buffer y relacion entre tasa de canal y tasa
-de muestreo.
+- `channel_filter_cutoff_hz`: ancho del filtro de canal FM.
+- `audio_rate_hz`: frecuencia de muestreo de audio.
+- `psd_buffer_samples`: máximo de muestras para PSD.
+- `psd_alpha`: factor de suavizado de PSD.
+- `audio_volume`: nivel de salida.
+- `deemphasis_us`: tiempo de deemphasis FM.
+- `audio_buffer_duration_s`: duración máxima del buffer de audio.
+- `audio_prebuffer_duration_s`: audio necesario antes de iniciar reproducción.
+- `audio_output_block_duration_s`: tamaño de bloque del stream.
+- `audio_output_latency_s`: latencia de la salida.
 
 ### `backend/sdr_device.py`
 
-Encapsula el uso de `rtlsdr.RtlSdr`:
+Administra el dispositivo RTL-SDR con `pyrtlsdr`.
 
-- `open(config)`: abre el dispositivo y aplica la configuracion.
-- `configure(config)`: ajusta sample rate, frecuencia central y ganancia.
-- `read_samples(sample_count)`: lee IQ y elimina el promedio DC del bloque.
+Funciones clave:
+
+- `open(config)`: abre el SDR.
+- `configure(config)`: aplica sample rate, frecuencia, corrección y ganancia.
+- `read_samples(sample_count)`: lee muestras IQ y elimina el offset DC.
+- `read_samples_async(callback, sample_count)`: lectura asincrónica.
+- `cancel_async_read()`: detiene la lectura asincrónica.
 - `close()`: cierra el dispositivo.
 
 ### `backend/acquisition.py`
 
-`AcquisitionWorker` ejecuta la lectura continua en un hilo de fondo. En cada
-iteracion:
+Gestiona la adquisición continua de datos en hilos.
 
-1. Lee muestras IQ del SDR.
-2. Inserta IQ en `IQBuffer`.
-3. Demodula FM.
-4. Inserta audio en `AudioBuffer`.
-5. Notifica a la interfaz el audio mas reciente.
-
-Si ocurre una excepcion, llama el callback `on_error` para que la UI cierre la
-adquisicion de forma controlada.
+- Un hilo solicita muestras asincrónicamente al SDR.
+- Otro hilo procesa los bloques recibidos.
+- El buffer de entrada se maneja con cola y condición.
+- Si la cola se llena, se descartan bloques antiguos.
+- Cada bloque se guarda en `IQBuffer` y se procesa con el demodulador FM.
 
 ### `backend/buffers.py`
 
-Contiene dos buffers con proteccion por `threading.Lock`:
+Define buffers seguros para hilos.
 
-- `IQBuffer`: guarda chunks de muestras IQ y descarta las mas antiguas al superar
-  el limite de muestras.
-- `AudioBuffer`: cola de audio para reproduccion. Si se llena, descarta audio
-  antiguo para mantener latencia baja.
+- `IQBuffer`: almacena muestras IQ para cálculo de PSD.
+- `AudioBuffer`: almacena audio demodulado para reproducción.
+
+Ambos colocan y leen datos con `Lock` para evitar condiciones de carrera.
 
 ### `backend/dsp.py`
 
-Contiene dos funciones centrales de procesamiento:
+Contiene el procesamiento de señal:
 
-#### PSD
-
-`compute_psd(samples, config, previous_psd=None)`:
-
-1. Calcula PSD con `scipy.signal.welch`.
-2. Usa ventana Hann.
-3. Trabaja con espectro bilateral (`return_onesided=False`), adecuado para IQ
-   complejo.
-4. Aplica `fftshift` para centrar la frecuencia cero.
-5. Convierte el eje de frecuencia a MHz RF:
-
-```text
-frecuencia_rf_mhz = (frecuencia_central_hz + frecuencia_baseband_hz) / 1e6
-```
-
-6. Convierte potencia a dB/Hz.
-7. Aplica suavizado exponencial:
-
-```text
-psd_suavizada = alpha * psd_actual + (1 - alpha) * psd_anterior
-```
-
-#### Demodulacion FM
-
-`FMDemodulator.demodulate(iq_samples, config)`:
-
-1. Canaliza o remuestrea IQ hacia `channel_rate_hz`.
-2. Calcula la diferencia de fase entre muestras consecutivas:
-
-```text
-fase[n] = angle(x[n] * conj(x[n-1]))
-```
-
-3. Elimina componente DC de la diferencia de fase.
-4. Remuestrea hacia `audio_rate_hz`.
-5. Elimina DC de audio.
-6. Aplica filtro pasa banda de audio de 40 Hz a 16 kHz.
-7. Aplica deemphasis FM.
-8. Aplica AGC sencillo y control de volumen.
-9. Limita la salida entre -1 y 1 y entrega `float32`.
+- `compute_psd()`: obtiene PSD mediante Welch y `fftshift`.
+- `FMDemodulator`: demodulación FM completa.
 
 ### `backend/audio_output.py`
 
-Usa `sounddevice.OutputStream` para reproducir audio mono a baja latencia. El
-callback del stream consume muestras desde `AudioBuffer`. Tambien incluye
-`play_test_tone()`, que reproduce un tono de 440 Hz para verificar el audio.
+Controla la reproducción de audio con `sounddevice`.
 
-### `frontend/interface.py`
+- Usa PulseAudio en WSL.
+- Reproduce audio mono `float32`.
+- Cuenta callbacks y estados de la salida.
+- Tiene prueba de tono de 440 Hz.
 
-Implementa la interfaz grafica con Tkinter y Matplotlib:
+## 4. Funcionamiento completo del sistema
 
-- Panel izquierdo de parametros.
-- Botones: iniciar, detener, aplicar, salir, verificar SDR y probar audio.
-- Grafica superior: PSD en dB/Hz contra frecuencia MHz.
-- Grafica inferior: audio demodulado contra tiempo en ms.
-- Temporizador de actualizacion con `root.after()`.
-- Manejo de errores mediante `messagebox`.
+### Arranque y flujo principal
 
-## Parametros visibles en la interfaz
+1. El usuario abre la aplicación.
+2. La UI crea los objetos de backend y los controles.
+3. Al pulsar **Iniciar**:
+   - Se leen los datos de `FC`, `Span`, `NFFT / Nperseg` y `noverlap`.
+   - Se valida `SDRConfig`.
+   - Se abre y configura el RTL-SDR.
+   - Se inicia `AcquisitionWorker`.
+4. El SDR comienza a entregar bloques de muestras IQ.
+5. Cada bloque se almacena en `IQBuffer`.
+6. Cada bloque se envía a `FMDemodulator.demodulate()`.
+7. El audio resultante se guarda en `AudioBuffer`.
+8. Cuando hay suficiente audio en el buffer, se inicia la reproducción.
+9. La UI actualiza periódicamente la PSD y la forma de onda de audio.
 
-| Parametro | Significado | Valor inicial |
-| --- | --- | --- |
-| `FC [MHz]` | Frecuencia central del RTL-SDR | `100.0` |
-| `Span [MHz]` | Sample rate del SDR y ancho mostrado | `2.88` |
-| `NFFT / Nperseg` | Resolucion de Welch | `4096` |
-| `noverlap` | Solapamiento de Welch | `2048` |
+### Demodulación FM
 
-Otros parametros quedan definidos en `SDRConfig`, pero no aparecen todavia como
-controles de la UI.
+El proceso de demodulación es:
 
-## Dependencias
+- La señal recibida es compleja (IQ).
+- Se reduce la tasa de muestreo a `channel_rate_hz`.
+- Se calcula la diferencia de fase entre muestras sucesivas:
+  `angle(x[n] * conj(x[n-1]))`.
+- Esa diferencia representa la variación de frecuencia FM.
+- Se elimina la componente DC.
+- Se remuestrea el resultado a la tasa de audio.
+- Se filtra en banda de 40 Hz a 16 kHz.
+- Se aplica `deemphasis` FM.
+- Se ajusta el nivel con AGC y volumen.
+- Se devuelve audio mono en `float32`.
 
-El codigo importa estas librerias:
+### Cálculo de PSD
 
-- `numpy`
-- `scipy`
-- `matplotlib`
-- `sounddevice`
-- `pyrtlsdr` / modulo `rtlsdr`
-- `tkinter`
+La PSD se calcula con:
 
-Tambien requiere:
+- `scipy.signal.welch()` sobre las muestras IQ.
+- ventana Hann.
+- `nperseg` y `noverlap` configurables.
+- `return_onesided=False` para espectro complejo.
+- `fftshift()` para centrar frecuencias.
+- conversión a dB/Hz.
+- suavizado exponencial con `psd_alpha`.
 
-- Dispositivo RTL-SDR compatible.
-- Libreria del sistema `librtlsdr`.
-- Salida de audio disponible. En WSL se configura por defecto:
+El eje horizontal se muestra en MHz, centrado en la frecuencia seleccionada.
 
-```text
-PULSE_SERVER=unix:/mnt/wslg/PulseServer
-```
+### Filtrado
 
-## Como ejecutar
+Hay dos filtros principales:
 
-Desde la raiz del proyecto:
+1. Filtro de canal FM:
+   - Lowpass de 6 ordenes antes de decimar a `channel_rate_hz`.
+   - Protege contra aliasing.
+2. Filtro de audio:
+   - Bandpass de 40 Hz a 16 kHz en la tasa de audio.
+   - Elimina ruido fuera de la banda audible.
+
+Además, se aplica:
+
+- Deemphasis FM de 50/75 us.
+- AGC para nivelar la amplitud del audio.
+
+### Reproducción de audio
+
+- El audio se acumula en `AudioBuffer`.
+- El stream de `sounddevice` pide bloques de audio.
+- Si no hay suficiente audio, se produce un `underrun`.
+- Si hay exceso, se descarta audio antiguo para reducir latencia.
+- `Probar audio` reproduce un tono fijo de 440 Hz.
+
+## 5. Explicación del dashboard / interfaz
+
+### Recinto de parámetros
+
+Este recuadro controla la recepción y la PSD:
+
+- `FC [MHz]`: frecuencia central que sintoniza el SDR.
+- `Span [MHz]`: ancho de banda de muestreo del SDR.
+- `NFFT / Nperseg`: resolución para la PSD.
+- `noverlap`: cuanto se traslapan los fragmentos de Welch.
+
+### Gráfica PSD
+
+Muestra la energía de señal por frecuencia alrededor de la `FC`.
+
+- Picos grandes indican emisoras o señales.
+- La escala en dB/Hz muestra la potencia espectral.
+- La visualización se actualiza en tiempo real.
+
+### Gráfica de audio demodulado
+
+Muestra la forma de onda de audio audible después de la demodulación.
+
+- Permite ver si el audio está activo.
+- Sirve para detectar saturación, ruido o poca señal.
+
+### Botones y su significado
+
+- `Iniciar`: comienza la recepción y reproducción.
+- `Detener`: detiene la adquisición y el audio.
+- `Aplicar`: actualiza parámetros y reconfigura el SDR.
+- `Salir`: cierra la aplicación.
+- `Verificar SDR`: lee un bloque de prueba del RTL-SDR.
+- `Probar audio`: reproduce un tono de prueba de 440 Hz.
+
+### Indicador de estado
+
+El texto inferior informa sobre:
+
+- si el sistema está adquiriendo.
+- FC y Span actuales.
+- longitud del buffer de audio.
+- underruns y muestras descartadas.
+
+## 6. Parámetros que se pueden modificar desde el dashboard
+
+Los parámetros modificables directamente en la UI son:
+
+- `FC [MHz]`
+- `Span [MHz]`
+- `NFFT / Nperseg`
+- `noverlap`
+
+Estos afectan directamente:
+
+- la frecuencia de sintonización.
+- el ancho de observación.
+- la resolución de la PSD.
+- la suavidad y actualización de la PSD.
+
+Parámetros internos que existen en el código y afectan la operación son:
+
+- `gain_db` (ganancia del SDR).
+- `freq_correction_ppm` (corrección de frecuencia).
+- `fine_tune_khz` (ajuste fino).
+- `channel_rate_hz` (tasa de canal FM).
+- `channel_filter_cutoff_hz` (filtro de canal).
+- `audio_rate_hz` (tasa de audio).
+- `audio_volume` (volumen final).
+- `deemphasis_us` (deemphasis FM).
+- `audio_buffer_duration_s` y `audio_prebuffer_duration_s`.
+
+## 7. Video de funcionamiento
+
+En la carpeta del proyecto `VIDEOS_IMAGENES` está el video:
+
+- `VIDEOS_IMAGENES/FUNCIONAMIENTO_DASHBOARD.mp4`
+
+Este video muestra el funcionamiento completo del dashboard:
+
+- configuración de parámetros.
+- inicio de adquisición.
+- visualización de PSD.
+- reproducción de audio.
+- uso de los botones de verificación y prueba.
+
+## 8. Ejecución
+
+Para iniciar la aplicación desde la raíz del proyecto:
 
 ```bash
 python lab_sdr.py
 ```
 
-O directamente:
+O también:
 
 ```bash
 python scripts/run_app.py
 ```
 
-Si se usa el entorno virtual incluido:
+> Nota: Para que el audio funcione en WSL se usa `PULSE_SERVER=
+> unix:/mnt/wslg/PulseServer`.
 
-```bash
-source venv/bin/activate
-python lab_sdr.py
-```
-
-## Consideraciones de operacion
-
-- El span tambien actua como sample rate del RTL-SDR.
-- La PSD usa muestras acumuladas en `IQBuffer`, no solo el ultimo bloque.
-- El audio se prebufferiza antes de iniciar la reproduccion para reducir cortes.
-- Si `sample_rate_hz` no es multiplo de `channel_rate_hz`, se usa
-  `resample_poly` en lugar de decimacion entera.
-- Si `channel_rate_hz` no es multiplo de `audio_rate_hz`, tambien se usa
-  `resample_poly` para audio.
 - La demodulacion implementada es FM por diferencia de fase; no hay seleccion
   explicita de desplazamiento de canal dentro del span.
 

@@ -9,23 +9,26 @@ class SDRConfig:
     noverlap: int = 2048
 
     gain_db: float = 22.9
+    freq_correction_ppm: int = 0
+    fine_tune_khz: float = 0.0
     channel_rate_hz: int = 288_000
-    audio_rate_hz: int = 48_000
-    audio_block_duration_s: float = 0.0256
-    psd_buffer_samples: int = 256 * 1024
+    channel_filter_cutoff_hz: float = 120_000.0
+    audio_rate_hz: int = 44_100
+    audio_block_duration_s: float = 0.0512
+    psd_buffer_samples: int = 64 * 1024
     psd_y_min: float = -150.0
     psd_y_max: float = -20.0
     psd_alpha: float = 0.35
     audio_volume: float = 0.8
-    deemphasis_us: float = 50.0
-    audio_buffer_duration_s: float = 1.0
-    audio_prebuffer_duration_s: float = 0.25
-    audio_output_block_duration_s: float = 0.02
-    audio_output_latency_s: float = 0.12
+    deemphasis_us: float = 75.0
+    audio_buffer_duration_s: float = 8.0
+    audio_prebuffer_duration_s: float = 2.5
+    audio_output_block_duration_s: float = 0.0
+    audio_output_latency_s: float = 0.2
 
     @property
     def center_freq_hz(self):
-        return self.fc_mhz * 1e6
+        return (self.fc_mhz * 1e6) + (self.fine_tune_khz * 1e3)
 
     @property
     def sample_rate_hz(self):
@@ -47,6 +50,8 @@ class SDRConfig:
 
     @property
     def audio_output_block_frames(self):
+        if self.audio_output_block_duration_s <= 0:
+            return 0
         raw_frames = int(round(self.audio_rate_hz * self.audio_output_block_duration_s))
         return max(128, raw_frames)
 
@@ -63,8 +68,20 @@ class SDRConfig:
             raise ValueError("noverlap no puede ser negativo.")
         if self.noverlap >= self.nperseg:
             raise ValueError("noverlap debe ser menor que NFFT/Nperseg.")
+        if not 0.0 <= self.gain_db <= 49.6:
+            raise ValueError("La ganancia debe estar entre 0 y 49.6 dB.")
+        if not -100 <= self.freq_correction_ppm <= 100:
+            raise ValueError("La corrección PPM debe estar entre -100 y 100.")
+        if not -150.0 <= self.fine_tune_khz <= 150.0:
+            raise ValueError("El ajuste fino debe estar entre -150 y 150 kHz.")
         if self.channel_rate_hz >= self.sample_rate_hz:
             raise ValueError("La tasa de canal debe ser menor que el Span/sample rate.")
+        if self.channel_filter_cutoff_hz <= 0:
+            raise ValueError("El ancho del filtro de canal debe ser positivo.")
+        if self.channel_filter_cutoff_hz >= self.channel_rate_hz / 2:
+            raise ValueError("El filtro de canal debe quedar por debajo de Nyquist.")
+        if self.deemphasis_us not in (50.0, 75.0):
+            raise ValueError("La deemphasis debe ser 50 us o 75 us.")
         if self.audio_block_samples % 512 != 0:
             raise ValueError("audio_block_samples debe ser múltiplo de 512.")
         if self.psd_buffer_samples % 256 != 0:
