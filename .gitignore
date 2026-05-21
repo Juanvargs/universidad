@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿# Sistema
 Thumbs.db
 Desktop.ini
@@ -26,3 +27,30 @@ TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/curso_IA_CHEC/
 
 # Respaldos locales
 TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/_backups/
+=======
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.venv/
+ENV/
+env/
+
+# Editor files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Build / distribution
+build/
+dist/
+*.egg-info/
+>>>>>>> 4d84019 (Actualizar documentación y limpiar metadatos de Windows)
