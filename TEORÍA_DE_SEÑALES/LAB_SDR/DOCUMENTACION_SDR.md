@@ -1,5 +1,8 @@
 # Documentacion del software SDR
 
+# Intrgrantes de Grupo:
+Juan Pablo Vargas - Sebastián Tovar
+
 Este proyecto implementa una aplicacion de escritorio en Python para recibir
 señales con un RTL-SDR, visualizar la densidad espectral de potencia (PSD),
 demodular FM en tiempo real y reproducir el audio resultante.
