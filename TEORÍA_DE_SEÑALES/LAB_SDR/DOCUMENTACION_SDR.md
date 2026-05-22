@@ -1,7 +1,6 @@
-# Documentacion del software SDR
-
-# Intrgrantes de Grupo:
+Intregrantes de Grupo:
 Juan Pablo Vargas - Sebastián Tovar
+# Documentacion del software SDR
 
 Este proyecto implementa una aplicacion de escritorio en Python para recibir
 señales con un RTL-SDR, visualizar la densidad espectral de potencia (PSD),
