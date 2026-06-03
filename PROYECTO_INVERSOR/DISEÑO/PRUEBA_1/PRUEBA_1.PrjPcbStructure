@@ -1,1 +1,5 @@
-Record=TopLevelDocument|FileName=Sheet1.SchDoc|SheetNumber=1
+Record=TopLevelDocument|FileName=000_TOP.SchDoc|SheetNumber=1
+Record=SheetSymbol|SourceDocument=000_TOP.SchDoc|Designator=U_100_MCU|SchDesignator=U_100_MCU|FileName=100_MCU.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=100_MCU.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=000_TOP.SchDoc|Designator=U_200_AUX_SUPPLIES|SchDesignator=U_200_AUX_SUPPLIES|FileName=200_AUX_SUPPLIES.SchDoc|SheetNumber=3|SymbolType=Normal|RawFileName=200_AUX_SUPPLIES.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=000_TOP.SchDoc|Designator=U_400_POWER_STAGE|SchDesignator=U_400_POWER_STAGE|FileName=400_POWER_STAGE.SchDoc|SheetNumber=4|SymbolType=Normal|RawFileName=400_POWER_STAGE.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=400_POWER_STAGE.SchDoc|Designator=H_BRIDGE_CORE|SchDesignator=H_BRIDGE_CORE|FileName=410_H_BRIDGE_CORE.SchDoc|SheetNumber=5|SymbolType=Normal|RawFileName=410_H_BRIDGE_CORE.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
