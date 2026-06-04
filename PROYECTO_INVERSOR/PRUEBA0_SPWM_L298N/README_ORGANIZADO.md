@@ -36,8 +36,8 @@ SiC del proyecto real.
 
 ## Documentacion relacionada
 
-- `../DOCUMENTACION/01_prueba_concepto_l298n.md`
+- `../DOCUMENTACION/01_prueba_concepto_l298n.md`: documento completo con calculos, resultados y graficas de WaveForms.
 - `../DOCUMENTACION/03_componentes_principales.md`
 
-El README original conserva mas detalle narrativo, pero este archivo queda como
-entrada limpia y rapida a la prueba.
+Este archivo queda como entrada rapida a la prueba. La documentacion completa se
+centralizo en `../DOCUMENTACION/01_prueba_concepto_l298n.md`.

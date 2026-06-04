@@ -8,7 +8,7 @@ buscar informacion dispersa en el firmware, imagenes y documentos tecnicos.
 | Documento | Proposito |
 | --- | --- |
 | `00_resumen_general.md` | Vision completa del proyecto, etapas y carpetas. |
-| `01_prueba_concepto_l298n.md` | Resumen ordenado de la prueba con `STM32G474RE` y `L298N`. |
+| `01_prueba_concepto_l298n.md` | Documento completo de la prueba con `STM32G474RE`, `L298N`, calculos, resultados y graficas de WaveForms. |
 | `02_proyecto_real_inversor_125k.md` | Arquitectura del inversor real, firmware, pines y bloques de potencia. |
 | `03_componentes_principales.md` | Componentes usados en la prueba de concepto y en el proyecto real. |
 | `04_checklist_integracion_validacion.md` | Lista de verificacion para continuar el montaje y validarlo en banco. |

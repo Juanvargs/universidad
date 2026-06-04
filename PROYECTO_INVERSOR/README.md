@@ -17,7 +17,7 @@ con `L298N` hasta el proyecto real con modulo SiC de potencia.
 
 1. `DOCUMENTACION/README.md`
 2. `DOCUMENTACION/00_resumen_general.md`
-3. `DOCUMENTACION/01_prueba_concepto_l298n.md`
+3. `DOCUMENTACION/01_prueba_concepto_l298n.md` para revisar calculos, resultados y graficas de WaveForms de la prueba L298N.
 4. `DOCUMENTACION/02_proyecto_real_inversor_125k.md`
 5. `DOCUMENTACION/03_componentes_principales.md`
 6. `DOCUMENTACION/04_checklist_integracion_validacion.md`
