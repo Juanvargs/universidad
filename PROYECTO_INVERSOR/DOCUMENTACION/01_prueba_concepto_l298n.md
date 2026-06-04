@@ -4,9 +4,6 @@ Autor: Juan Pablo Vargas Cordoba
 Universidad: Universidad Nacional de Colombia  
 Proyecto: Prueba de generacion SPWM para control de puente H con modulo L298N
 
-Este documento integra la informacion completa de la prueba de concepto que se
-tenia en `C:\Users\juanv\Downloads\README (3).md`, organizada dentro del
-repositorio del proyecto.
 
 ## Indice
 
@@ -26,13 +23,13 @@ repositorio del proyecto.
 
 En esta etapa se implemento una prueba experimental de un inversor monofasico
 controlado mediante SPWM usando una tarjeta `STM32 NUCLEO-G474RE` y un modulo
-`L298N`. La STM32 genera tres senales de control:
+`L298N`. La STM32 genera tres señales de control:
 
-- Una senal SPWM de alta frecuencia hacia `ENA`.
-- Una senal digital hacia `IN1`.
-- Una senal digital complementaria hacia `IN2`.
+- Una señal SPWM de alta frecuencia hacia `ENA`.
+- Una señal digital hacia `IN1`.
+- Una señal digital complementaria hacia `IN2`.
 
-El L298N usa estas senales para conmutar su puente H interno y obtener una
+El L298N usa estas señales para conmutar su puente H interno y obtener una
 salida alterna diferencial entre `OUT1` y `OUT2`.
 
 La salida se verifico con `Analog Discovery 2` usando WaveForms. Primero se
@@ -57,7 +54,7 @@ una forma de onda mas cercana a una senoidal.
 
 | Componente | Uso en la prueba |
 | --- | --- |
-| `STM32 NUCLEO-G474RE` | Generacion de SPWM y senales de polaridad. |
+| `STM32 NUCLEO-G474RE` | Generacion de SPWM y señales de polaridad. |
 | Modulo `L298N` | Puente H de baja potencia. |
 | Protoboard y jumpers | Montaje experimental. |
 | Fuente DC externa | Alimentacion de potencia del puente H. |
@@ -72,7 +69,7 @@ una forma de onda mas cercana a una senoidal.
 STM32 NUCLEO-G474RE  ->  L298N puente H  ->  Filtro LC y carga
 ```
 
-La STM32 no entrega potencia a la carga. Su funcion es generar las senales de
+La STM32 no entrega potencia a la carga. Su funcion es generar las señales de
 control. La potencia que recibe la carga proviene de la fuente externa conectada
 al L298N.
 
@@ -88,7 +85,7 @@ Fuente DC de potencia
  salida alterna diferencial
 ```
 
-Las senales de control usadas son:
+Las señales de control usadas son:
 
 ```text
 A5 / PC0 -> ENA -> SPWM
@@ -102,9 +99,9 @@ D8 / PA9 -> IN2 -> seleccion de polaridad complementaria
 
 | Pin fisico Nucleo | Pin MCU | Funcion |
 | --- | --- | --- |
-| `A5` | `PC0` | Senal SPWM hacia `ENA` del L298N. |
-| `D7` | `PA8` | Senal digital hacia `IN1`. |
-| `D8` | `PA9` | Senal digital hacia `IN2`. |
+| `A5` | `PC0` | Señal SPWM hacia `ENA` del L298N. |
+| `D7` | `PA8` | Señal digital hacia `IN1`. |
+| `D8` | `PA9` | Señal digital hacia `IN2`. |
 | `GND` | GND | Tierra comun del sistema. |
 | `5V` | 5 V | Alimentacion logica del modulo L298N durante la prueba. |
 
