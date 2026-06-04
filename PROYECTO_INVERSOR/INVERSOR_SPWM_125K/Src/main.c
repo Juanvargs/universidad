@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "spwm_inverter.h"
 
 /* USER CODE END Includes */
 
@@ -34,6 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SPWM_MODULATION_PERMILLE       800U
 
 /* USER CODE END PD */
 
@@ -91,6 +93,13 @@ int main(void)
   MX_TIM1_Init();
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
+  SPWM_Inverter_Init();
+  SPWM_Inverter_SetModulationPermille(SPWM_MODULATION_PERMILLE);
+  if (SPWM_Inverter_Start() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* Validate PWM pins with a scope before calling SPWM_Inverter_EnablePowerStage(). */
 
   /* USER CODE END 2 */
 
