@@ -13,6 +13,7 @@ buscar informacion dispersa en el firmware, imagenes y documentos tecnicos.
 | `03_componentes_principales.md` | Componentes usados en la prueba de concepto y en el proyecto real. |
 | `04_checklist_integracion_validacion.md` | Lista de verificacion para continuar el montaje y validarlo en banco. |
 | `05_firmware_spwm_stm32.md` | Explicacion del firmware SPWM, `TIM1`, duty bipolar, pines PWM y futuras lecturas ADC. |
+| `06_referencias_utilizadas.md` | Indice de datasheets, disenos guia, componentes evaluados y referencias de compra. |
 | `MSCSM120HM16CT3AG_ficha_tecnica.md` | Ficha tecnica organizada del modulo SiC de puente H. |
 | `MSCSM120HM16CT3AG_drivers_filtros_referencias.md` | Driver de compuerta, fuente aislada y calculos de referencia. |
 | `registro_cambios_diseno_inversor.md` | Cambios de diseno frente a la plantilla TIDA y decisiones tecnicas. |
