@@ -1,16 +1,25 @@
-<<<<<<< HEAD
-﻿# Sistema
+# Sistema
 Thumbs.db
 Desktop.ini
+.DS_Store
 
-# VS Code
+# Editores
 .vscode/
+*.swp
+*.swo
+*~
 
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Entornos virtuales
 .venv/
 venv/
+env/
+ENV/
+.env/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -22,35 +31,15 @@ venv/
 *.toc
 *.synctex.gz
 
-# Repositorios/datos externos clonados para clase
-TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/curso_IA_CHEC/
-
-# Respaldos locales
-TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/_backups/
-=======
-# Python artifacts
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-venv/
-.env/
-.venv/
-ENV/
-env/
-
-# Editor files
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Logs
-*.log
-
-# Build / distribution
+# Build / distribucion
 build/
 dist/
 *.egg-info/
->>>>>>> 4d84019 (Actualizar documentación y limpiar metadatos de Windows)
+
+# Repositorios/datos externos clonados para clase
+TEORIA_DE_APRENDIZAJE_DE_MAQUINA/curso_IA_CHEC/
+TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/curso_IA_CHEC/
+
+# Respaldos locales
+TEORIA_DE_APRENDIZAJE_DE_MAQUINA/_backups/
+TEORÍA_DE_APRENDIZAJE_DE_MÁQUINA/_backups/

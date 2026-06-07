@@ -1,0 +1,27 @@
+idf_component_register(
+    SRCS 
+        "main.c"
+        "control.c"
+        "motor.c"
+        "oled.c"
+        "pid.c"
+        "rpm.c"
+        "uart_cmd.c"
+        "wifi_connect.c"
+        "http_server.c"
+    INCLUDE_DIRS 
+        "."
+    REQUIRES 
+        driver
+        esp_driver_gpio
+        esp_driver_i2c
+        esp_driver_ledc
+        esp_driver_uart
+        esp_timer
+        esp_wifi
+        esp_netif
+        esp_event
+        esp_http_server
+        nvs_flash
+        cjson
+)

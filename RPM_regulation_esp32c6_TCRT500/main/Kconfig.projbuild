@@ -1,0 +1,23 @@
+menu "RPM Motor Control"
+
+    config RPM_WIFI_SSID
+        string "WiFi SSID"
+        default ""
+        help
+            Nombre de la red WiFi usada por el servidor HTTP. Si queda vacio,
+            el firmware funciona sin HTTP y conserva UART/OLED/control PID.
+
+    config RPM_WIFI_PASSWORD
+        string "WiFi password"
+        default ""
+        help
+            Contrasena de la red WiFi. Dejar vacio solo para redes abiertas.
+
+    config RPM_WIFI_MAX_RETRY
+        int "WiFi max retry"
+        range 1 20
+        default 8
+        help
+            Numero maximo de reintentos antes de deshabilitar HTTP.
+
+endmenu
