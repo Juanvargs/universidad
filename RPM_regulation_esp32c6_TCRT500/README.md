@@ -2,6 +2,10 @@
 
 Firmware para regular la velocidad de un motor DC mediante control PID sobre un ESP32-C6. El sistema mide RPM con un sensor optico TCRT5000, acciona el motor por PWM usando un L293D, muestra datos en una OLED SSD1306 y permite modificar la referencia de RPM por UART o por una pagina web local.
 
+## Video de demostracion
+
+[Ver demostracion del proyecto en YouTube](https://youtu.be/YIFlS1HBjsg?si=SRZd096OrHsiWsi5)
+
 ## Que hace el proyecto
 
 El sistema compara una referencia de velocidad con la velocidad real del motor y ajusta automaticamente la potencia aplicada al driver. La referencia puede ir de 0 a 6000 RPM:
