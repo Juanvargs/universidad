@@ -1,165 +1,190 @@
-# Revision tecnica del proyecto RPM Motor Control
+# Memoria tecnica del proyecto
 
-Este documento resume el estado actual del firmware, los riesgos principales y la conectividad HTTP agregada sin romper la ruta de control PID que ya existe.
+Este documento describe la estructura tecnica del firmware, el funcionamiento de cada modulo y las decisiones principales tomadas para estabilizar el control de RPM.
 
-## Resumen del sistema
+## Objetivo del sistema
 
-El proyecto implementa un control de velocidad para motor DC sobre ESP32-C6. La ruta principal es:
+Se implemento un sistema de control de velocidad para un motor DC usando un ESP32-C6. La velocidad se mide con un sensor optico TCRT5000, el motor se acciona mediante un L293D y la referencia de RPM puede configurarse por UART o por una pagina web local.
 
-1. `rpm.c` cuenta pulsos del sensor por interrupcion y calcula RPM filtradas.
-2. `control.c` lee la medicion, compara contra la referencia y ejecuta el PID.
-3. `pid.c` calcula una salida limitada al rango PWM de 8 bits.
-4. `motor.c` aplica direccion y duty al driver del motor.
-5. `oled.c` muestra RPM medida, objetivo y barra de duty.
-6. `uart_cmd.c` permite modificar la referencia por UART.
+El sistema busca mantener la velocidad medida cerca de la referencia indicada en RPM, dentro del rango de 0 a 6000 RPM.
 
-La separacion por modulos es buena para un proyecto embebido: cada archivo tiene una responsabilidad clara y la referencia de RPM ya esta encapsulada con `control_set_setpoint()` y `control_get_setpoint()`. La interfaz HTTP reutiliza esa frontera y lee un snapshot seguro con `control_get_status()`.
+## Flujo funcional
 
-## Fortalezas
+1. `main.c` inicializa los modulos principales.
+2. `motor.c` configura el PWM y los pines de direccion del L293D.
+3. `rpm.c` mide el periodo entre pulsos del TCRT5000.
+4. `control.c` ejecuta la logica de arranque, feedforward, PID y aplicacion del duty.
+5. `oled.c` muestra RPM, referencia y duty en pantalla.
+6. `uart_cmd.c` permite modificar la referencia desde el monitor serial.
+7. `wifi_connect.c` conecta el ESP32-C6 a la red WiFi.
+8. `http_server.c` publica la interfaz web y la API de control.
 
-- Arquitectura modular y facil de seguir.
-- Control loop periodico con `SAMPLE_TIME_MS` centralizado en `config.h`.
-- Setpoint y telemetria protegidos con seccion critica, utiles para la tarea HTTP concurrente.
-- Comandos UART ya validan rango minimo y maximo antes de aplicar cambios.
-- OLED no bloquea la inicializacion completa si falla; el firmware continua operando.
-- El README documenta hardware, pinout, comandos, calibracion y flujo de trabajo.
+## Arquitectura por modulos
 
-## Riesgos y mejoras recomendadas
+| Modulo | Responsabilidad |
+| --- | --- |
+| `main.c` | Secuencia de inicializacion y creacion de tareas. |
+| `config.h` | Pines, limites, calibracion y parametros de control. |
+| `motor.c` | PWM LEDC y direccion del motor. |
+| `rpm.c` | Interrupcion del sensor, calculo y filtro de RPM. |
+| `pid.c` | Calculo PID basico. |
+| `control.c` | Control principal de velocidad. |
+| `oled.c` | Visualizacion local en SSD1306. |
+| `uart_cmd.c` | Comandos por puerto serial. |
+| `wifi_connect.c` | Conexion WiFi en modo station. |
+| `http_server.c` | Pagina web y endpoints HTTP. |
 
-### Control PID
+La separacion permite que el control del motor no dependa directamente de la web ni de la pantalla. La pantalla se actualiza en una tarea separada, y la web consulta un estado ya calculado por `control_get_status()`.
 
-- `pid_compute()` satura la salida entre `0` y `255`, por lo que la rama de direccion negativa en `control_task()` nunca se usa realmente.
-- No hay anti-windup: si la referencia queda lejos de la medicion durante mucho tiempo, el termino integral puede acumularse aunque la salida ya este saturada.
-- `dt` se pasa fijo como `0.1`, pero el periodo real depende de `SAMPLE_TIME_MS`. Conviene calcularlo desde la constante o medir tiempo real.
-- Los comentarios tienen caracteres mal codificados, por ejemplo `SaturaciÃ³n`. Conviene guardar los archivos como UTF-8 o usar ASCII en comentarios.
+## Medicion de RPM
 
-### Medicion de RPM
+Se usa una interrupcion sobre el GPIO del sensor. Cada flanco valido permite medir el tiempo entre dos pulsos consecutivos.
 
-- `pulse_count` se modifica en ISR y se lee/reinicia en tarea sin una seccion critica. Puede perder pulsos o leer valores inconsistentes.
-- `gpio_install_isr_service(0)` puede fallar si otro modulo ya instalo el servicio. Conviene manejar `ESP_ERR_INVALID_STATE`.
-- El rechazo fijo de pulsos menores a 2 ms limita la velocidad maxima medible. Con `PULSES_PER_REV = 1`, 2 ms equivale a un maximo teorico de 30000 RPM, pero con encoders de mas pulsos por vuelta el limite baja rapidamente.
-- No se configuran pull-up/pull-down para `PIN_SENSOR`; depende totalmente del hardware externo.
+La formula aplicada es:
 
-### Motor y seguridad
+```text
+RPM = 60000000 / (periodo_us * PULSES_PER_REV)
+```
 
-- `motor_set_direction()` no contempla `dir == 0`. Para una parada segura podria ponerse ambos pines en bajo o usar una funcion explicita `motor_stop()`.
-- No hay rampa de aceleracion ni limite de cambio de duty. Algunos drivers y fuentes pueden sufrir con escalones bruscos.
-- No hay watchdog de referencia: si una interfaz remota queda escribiendo valores invalidos o muy cambiantes, solo el rango protege el sistema.
+Para este montaje se usa:
 
-### Configuracion del proyecto
+```c
+#define PULSES_PER_REV 1
+```
 
-- `main/Kconfig.projbuild` todavia contiene opciones de ejemplo `BLINK_*` que no se usan en el firmware actual.
-- `main/idf_component.yml` declara `espressif/led_strip`, pero el codigo actual no usa tiras LED.
-- `main/CMakeLists.txt` ya declara los componentes de red necesarios para WiFi, HTTP, NVS, eventos y JSON.
+El uso de periodo entre pulsos se eligio porque una sola marca por vuelta genera pocos pulsos. Medir por conteo en una ventana fija de 100 ms producia resolucion baja: un pulso podia representar aproximadamente 600 RPM, dos pulsos 1200 RPM, etc. Por eso se implemento medicion por periodo.
 
-## Apartado de conectividad HTTP
+## Rechazo de ruido del sensor
 
-La implementacion agrega un servidor HTTP embebido en el ESP32-C6. La interfaz HTTP reutiliza las funciones existentes de control, especialmente `control_set_setpoint()`, `control_get_setpoint()` y `control_get_status()`. El endpoint no llama `rpm_get()` directamente para no alterar la cadencia del loop PID.
+Se aplicaron varias protecciones:
 
-### Objetivo
+- Antirrebote temporal.
+- Rechazo de intervalos que impliquen mas de 6000 RPM.
+- Comparacion contra el intervalo anterior para rechazar pulsos demasiado cercanos.
+- Mediana de 5 periodos.
+- Filtro exponencial con respuesta diferente para subida y bajada.
 
-Permitir monitoreo y control basico desde una red local:
+Estas medidas reducen picos falsos causados por vibracion, cambios de luz, mala alineacion o ruido electrico del motor.
 
-- Consultar RPM medida.
-- Consultar referencia configurada.
-- Consultar duty aplicado, si se expone desde `control.c`.
-- Cambiar la referencia de RPM con validacion de rango.
-- Verificar salud del firmware con un endpoint simple.
+## Control del motor
 
-### Endpoints implementados
+El control se divide en dos modos:
+
+### Modo STARTING
+
+Cuando la referencia es mayor que cero y el motor aun no tiene una lectura confiable, se aplica:
+
+```text
+DUTY = 255
+```
+
+Este arranque en lazo abierto permite vencer la friccion estatica del motor. El sistema permanece en este modo hasta detectar movimiento suficiente.
+
+### Modo RUNNING
+
+Cuando el sensor confirma movimiento, el sistema cierra el lazo de control. En este modo se calcula:
+
+```text
+CMD = duty_base_por_RPM + PIDOUT
+```
+
+Luego `CMD` se limita, se suaviza y se aplica como `DUTY`.
+
+## Transferencia de arranque a control cerrado
+
+Se midio que, para una referencia de 500 RPM, el sistema podia entrar a control alrededor de 425 RPM.
+
+De esa relacion:
+
+```text
+425 / 500 = 0.85
+```
+
+se obtuvo la regla:
+
+```text
+RPM_handoff = max(80 RPM, referencia * 0.85)
+```
+
+Esto permite que el umbral de entrada a control cerrado sea proporcional a la referencia. Asi se evita usar un umbral fijo que pueda ser demasiado alto para referencias bajas.
+
+## PID y feedforward
+
+El PID no genera directamente todo el duty. Primero se calcula una base de PWM aproximada segun la referencia:
+
+```text
+500 RPM -> duty base 190
+6000 RPM -> duty base 255
+```
+
+Sobre esa base se suma la correccion PID:
+
+```text
+PIDOUT = Kp * error + integral - Kd * cambio_medicion
+CMD = duty_base + PIDOUT
+```
+
+Parametros finales:
+
+```c
+#define PID_KP 0.12f
+#define PID_KI 0.01f
+#define PID_KD 0.00f
+```
+
+Se mantuvo `Kd` en cero para evitar amplificacion del ruido del sensor optico.
+
+## Reduccion de saltos de duty
+
+Durante las pruebas se identifico que, cuando la velocidad medida quedaba apenas por debajo de la referencia, una proteccion de duty minimo podia entrar como escalon. Esto generaba cambios bruscos de potencia.
+
+Se reemplazo el escalon por una rampa progresiva. La banda minima se calcula asi:
+
+```text
+banda = max(10 RPM, 2% de la referencia)
+```
+
+Si el error es pequeno, la ayuda es pequena. Si el error aumenta, la ayuda sube hasta la zona de recuperacion. Esta logica se aplica para cualquier referencia, no solo para 500 RPM.
+
+## OLED
+
+La pantalla SSD1306 se maneja por I2C a 400 kHz. La actualizacion se realiza desde `oled_task`, separada de `control_task`.
+
+Esta decision evita que una falla o demora de I2C afecte directamente el periodo del control del motor.
+
+## Interfaz HTTP
+
+La pagina web esta embebida en `http_server.c`. El navegador consulta el estado del sistema cada 250 ms.
+
+Endpoints:
 
 | Metodo | Ruta | Funcion |
 | --- | --- | --- |
-| `GET` | `/api/status` | Devuelve estado del sistema: RPM medida, referencia, limites y estado de control |
-| `GET` | `/api/rpm` | Devuelve solo la medicion actual de RPM |
-| `GET` | `/api/setpoint` | Devuelve la referencia actual |
-| `POST` | `/api/setpoint` | Cambia la referencia de RPM |
-| `GET` | `/health` | Responde si el servidor esta vivo |
+| `GET` | `/` | Pagina web |
+| `GET` | `/health` | Estado basico del servidor |
+| `GET` | `/api/status` | RPM, referencia, PIDOUT, CMD, duty y modo |
+| `GET` | `/api/setpoint` | Referencia configurada |
+| `POST` | `/api/setpoint` | Cambio de referencia |
 
-Ejemplo de respuesta para `GET /api/status`:
+El cambio de referencia se valida contra los limites definidos en `config.h`.
 
-```json
-{
-  "rpm": 842.15,
-  "setpoint": 1000.0,
-  "min_setpoint": 0.0,
-  "max_setpoint": 9000.0
-}
+## Validacion
+
+Se verifico la compilacion del proyecto con ESP-IDF 6.0.1 para el objetivo `esp32c6`. La imagen generada fue:
+
+```text
+build/RPM.bin
 ```
 
-Ejemplo de cuerpo para `POST /api/setpoint`:
+Durante la compilacion aparece una advertencia de particion casi llena. La advertencia no impide compilar ni flashear, pero indica que el firmware se encuentra cerca del limite de la particion de aplicacion.
 
-```json
-{
-  "rpm": 1500
-}
-```
+## Consideraciones de presentacion
 
-### Cambios tecnicos implementados
+Para una demostracion estable se recomienda:
 
-1. Se agrego `wifi_connect.c` / `wifi_connect.h` para inicializar NVS, `esp_netif`, event loop y modo station.
-2. Se agrego `http_server.c` / `http_server.h` basado en `esp_http_server`.
-3. Se agregaron credenciales por Kconfig y `sdkconfig.defaults`, evitando hardcodearlas en `config.h`.
-4. Se agregaron dependencias a `main/CMakeLists.txt`:
-
-```cmake
-REQUIRES
-    driver
-    esp_timer
-    esp_wifi
-    esp_netif
-    esp_event
-    esp_http_server
-    nvs_flash
-    json
-```
-
-5. Se inicializa red y servidor HTTP en `app_main()` si el SSID esta configurado:
-
-```c
-if (wifi_connect_sta() == ESP_OK) {
-    ESP_ERROR_CHECK(rpm_http_server_start());
-}
-```
-
-6. UART se mantiene como canal local de respaldo. HTTP no reemplaza la interfaz serial durante pruebas.
-
-### Seguridad minima recomendada
-
-- No exponer el ESP32 directamente a Internet.
-- Mantenerlo solo en red local o VLAN de laboratorio.
-- Validar rango de `rpm` usando los mismos limites que UART.
-- Responder `400 Bad Request` ante JSON invalido o valores fuera de rango.
-- Considerar un token simple por header, por ejemplo `X-Api-Key`, si la red es compartida.
-- Registrar cambios de setpoint por HTTP con `ESP_LOGI`.
-
-### Concurrencia
-
-`control_set_setpoint()` protege la referencia con `portMUX_TYPE`, asi que puede ser llamada desde una tarea HTTP. Para exponer datos del loop se agrego `control_get_status()`, que entrega RPM, setpoint, salida PID, duty y limites en una sola lectura segura.
-
-### Orden de implementacion sugerido
-
-1. Probar `idf.py build` con el entorno ESP-IDF cargado.
-2. Configurar SSID/password con `idf.py menuconfig`.
-3. Flashear y leer la IP desde el monitor serial.
-4. Probar la pagina web desde el navegador.
-5. Probar los endpoints con `curl` desde la misma red.
-
-## Pruebas sugeridas
-
-- Compilar con `idf.py build` despues de cada cambio de dependencias.
-- Validar UART: `rpm 1500`, `set 0`, `ref=9000`, valores fuera de rango.
-- Validar RPM con generador de pulsos antes de conectar el motor.
-- Validar HTTP con:
-
-```bash
-curl http://ESP_IP/health
-curl http://ESP_IP/api/status
-curl -X POST http://ESP_IP/api/setpoint -H "Content-Type: application/json" -d "{\"rpm\":1500}"
-```
-
-- Confirmar que el loop PID sigue estable mientras se consultan endpoints repetidamente.
-
-## Conclusion
-
-El proyecto queda encaminado para control local por UART, visualizacion OLED y monitoreo/control HTTP en red local. La integracion HTTP usa endpoints pequenos, validacion estricta y funciones de control existentes para no duplicar reglas de negocio.
+- Mantener tierra comun entre ESP32-C6, L293D, fuente del motor, sensor y OLED.
+- Ajustar el potenciometro del TCRT5000 antes de ejecutar pruebas.
+- Usar una marca de alto contraste y borde limpio.
+- Separar cables del motor de los cables del sensor.
+- Probar primero `rpm 500` y luego subir progresivamente.
+- Registrar el monitor serial para evidenciar `RPM`, `REF`, `CMD`, `DUTY` y `MODE`.

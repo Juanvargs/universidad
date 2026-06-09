@@ -2,7 +2,7 @@
 
 Este proyecto regula la velocidad de un motor DC usando un ESP32-C6, un sensor optico TCRT5000, un driver L293D, una pantalla OLED SSD1306 y una interfaz web. El objetivo es medir las revoluciones reales del motor, compararlas contra una referencia de RPM y ajustar el PWM enviado al driver para mantener la velocidad lo mas estable posible.
 
-La version actual es la version final probada del control. El ajuste mas importante es que el motor arranca con maxima potencia y luego entra al control cerrado cuando el sensor ya detecta movimiento. Ademas, la ayuda de duty minimo entra como rampa progresiva para evitar saltos bruscos cuando el RPM cae un poco por debajo de la referencia.
+La configuracion documentada corresponde a la version validada del control. Se implemento un arranque a maxima potencia y luego una transferencia a control cerrado cuando el sensor ya detecta movimiento. Ademas, la ayuda de duty minimo se aplica como una rampa progresiva para evitar saltos bruscos cuando el RPM cae por debajo de la referencia.
 
 ## Hardware usado
 
@@ -53,9 +53,9 @@ Importante: el negativo de la fuente externa del motor debe estar unido con el G
 | GND | Tierra comun |
 | OUT | ESP32-C6 GPIO1 |
 
-El codigo usa interrupcion por flanco de bajada en GPIO1. El sensor debe cambiar de estado cuando pasa de zona blanca a negra o de negra a blanca, segun el ajuste del potenciometro del modulo.
+El codigo usa interrupcion por flanco de bajada en GPIO1. El sensor cambia de estado cuando pasa de zona blanca a negra o de negra a blanca, segun el ajuste del potenciometro del modulo.
 
-Para probarlo fisicamente, acerca una marca negra/blanca al sensor y verifica que el LED del modulo cambie. Si el LED no cambia, ajusta el potenciometro hasta que cambie justo cuando pasa la marca.
+Para probarlo fisicamente, se acerca una marca negra/blanca al sensor y se verifica que el LED del modulo cambie. Si el LED no cambia, se ajusta el potenciometro hasta que cambie justo cuando pasa la marca.
 
 ## Conexion de la OLED SSD1306
 
@@ -139,7 +139,7 @@ Punto de calibracion probado:
 #define PWM_RUN_FEEDFORWARD_DUTY 190.0f
 ```
 
-Eso significa que se observo que alrededor de 500 RPM el motor necesita una base cercana a 190 de duty. Para otras referencias, el codigo calcula una base proporcional:
+Esto indica que, alrededor de 500 RPM, el motor requiere una base cercana a 190 de duty. Para otras referencias, el codigo calcula una base proporcional:
 
 - De 0 a 500 RPM, escala desde 0 hasta 190.
 - De 500 a 6000 RPM, escala desde 190 hasta 255.
@@ -185,7 +185,7 @@ Ejemplos:
 | 1000 RPM | 850 RPM |
 | 3000 RPM | 2550 RPM |
 
-Esto evita el problema de exigir siempre 350 RPM incluso cuando la referencia era baja.
+Con este calculo se evita exigir un umbral fijo alto cuando la referencia es baja.
 
 ## Proteccion contra saltos bruscos
 
@@ -214,7 +214,7 @@ Ejemplos:
 | 3000 RPM | 60 RPM |
 | 6000 RPM | 120 RPM |
 
-Si el error es pequeno, el control corrige suave. Si el error crece, la ayuda aumenta progresivamente hasta llegar a recuperacion fuerte. Esto fue lo que elimino los golpes de duty cuando el motor estaba cerca de la referencia.
+Si el error es pequeno, el control corrige suavemente. Si el error crece, la ayuda aumenta progresivamente hasta llegar a recuperacion fuerte. Con esta rampa se reducen los golpes de duty cuando el motor esta cerca de la referencia.
 
 ## Filtro de RPM
 
@@ -375,4 +375,4 @@ Si aparece error de modo de arranque al flashear, desconecta temporalmente las s
 #define RPM_FILTER_ALPHA_FALL_NEAR 0.45f
 ```
 
-Estos valores corresponden a la version final probada. La estabilidad depende tambien de la distancia entre el sensor y la marca del motor, la calidad de la fuente, la tierra comun y la alineacion mecanica.
+Estos valores corresponden a la configuracion validada del sistema. La estabilidad depende tambien de la distancia entre el sensor y la marca del motor, la calidad de la fuente, la tierra comun y la alineacion mecanica.
