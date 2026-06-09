@@ -20,7 +20,7 @@ La configuracion documentada corresponde a la version validada del control. Se i
 | --- | ---: | --- |
 | PWM motor | GPIO4 | L293D pin 1, `EN1` |
 | Direccion IN1 | GPIO5 | L293D pin 2, `IN1` |
-| Direccion IN2 | GPIO8 | L293D pin 7, `IN2` |
+| Direccion IN2 | GPIO10 | L293D pin 7, `IN2` |
 | Sensor RPM | GPIO1 | TCRT5000 `OUT` |
 | OLED SDA | GPIO6 | OLED `SDA` |
 | OLED SCL | GPIO7 | OLED `SCL` |
@@ -37,7 +37,7 @@ Estos pines estan definidos en `main/config.h`.
 | 4 | GND | Tierra comun |
 | 5 | GND | Tierra comun |
 | 6 | OUT2 | Terminal 2 del motor |
-| 7 | IN2 | ESP32-C6 GPIO8 |
+| 7 | IN2 | ESP32-C6 GPIO10 |
 | 8 | VCC2 | Positivo de la fuente externa del motor |
 | 12 | GND | Tierra comun |
 | 13 | GND | Tierra comun |
@@ -346,7 +346,7 @@ idf.py build
 idf.py -p COM13 flash monitor
 ```
 
-Si aparece error de modo de arranque al flashear, desconecta temporalmente las senales conectadas a GPIO4, GPIO5 o GPIO8 del driver, o usa los botones `BOOT` y `RESET` de la placa para entrar en modo descarga.
+Si aparece error de modo de arranque al flashear, desconecta temporalmente las senales conectadas a GPIO4, GPIO5 o GPIO10 del driver, o usa los botones `BOOT` y `RESET` de la placa para entrar en modo descarga.
 
 ## Notas importantes de uso
 

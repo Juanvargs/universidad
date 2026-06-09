@@ -3,7 +3,7 @@
 // Pines22
 #define PIN_PWM     4
 #define PIN_IN1     5
-#define PIN_IN2     8
+#define PIN_IN2     10
 #define PIN_SENSOR  1
 
 // OLED SSD1306 I2C
