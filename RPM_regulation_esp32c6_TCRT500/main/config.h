@@ -37,6 +37,8 @@
 #define PWM_RECOVERY_DUTY 200.0f
 #define PWM_KICKSTART_DUTY 255.0f
 #define RPM_CONTROL_DEADBAND 90.0f
+#define RPM_MIN_EFFECTIVE_BAND_RATIO 0.02f
+#define RPM_MIN_EFFECTIVE_BAND_MIN 10.0f
 
 // Open-loop startup before closing the RPM feedback loop.
 #define RPM_STARTUP_DUTY 255.0f

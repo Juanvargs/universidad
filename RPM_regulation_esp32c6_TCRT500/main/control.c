@@ -83,6 +83,10 @@ static float maxf_local(float a, float b) {
     return (a > b) ? a : b;
 }
 
+static float mixf_local(float from, float to, float ratio) {
+    return from + (to - from) * clampf_local(ratio, 0.0f, 1.0f);
+}
+
 static float startup_handoff_rpm(float setpoint) {
     if (setpoint <= 0.0f || RPM_STARTUP_HANDOFF_CAL_RPM <= 0.0f) {
         return 0.0f;
@@ -122,6 +126,11 @@ static float feedforward_duty_for_setpoint(float setpoint) {
     return duty_from_calibration(setpoint, PWM_RUN_FEEDFORWARD_DUTY, PWM_MAX_DUTY);
 }
 
+static float min_effective_band_for_setpoint(float setpoint) {
+    float proportional_band = setpoint * RPM_MIN_EFFECTIVE_BAND_RATIO;
+    return maxf_local(RPM_MIN_EFFECTIVE_BAND_MIN, proportional_band);
+}
+
 static float apply_motor_feedforward(float pid_correction, float setpoint, float current_rpm) {
     if (setpoint <= 0.0f) {
         return 0.0f;
@@ -130,13 +139,18 @@ static float apply_motor_feedforward(float pid_correction, float setpoint, float
     float base_duty = feedforward_duty_for_setpoint(setpoint);
     float min_effective_duty = duty_from_calibration(setpoint, PWM_MIN_EFFECTIVE_DUTY, PWM_MAX_DUTY);
     float recovery_duty = duty_from_calibration(setpoint, PWM_RECOVERY_DUTY, PWM_MAX_DUTY);
+    float min_effective_band = min_effective_band_for_setpoint(setpoint);
     float command = base_duty + pid_correction;
+    float underspeed = setpoint - current_rpm;
 
-    if (current_rpm < (setpoint - RPM_CONTROL_DEADBAND) &&
-        command < recovery_duty) {
-        command = recovery_duty;
-    } else if (current_rpm < setpoint && command < min_effective_duty) {
-        command = min_effective_duty;
+    if (underspeed > min_effective_band) {
+        float assist_span = RPM_CONTROL_DEADBAND - min_effective_band;
+        float assist_ratio = (assist_span > 1.0f) ? ((underspeed - min_effective_band) / assist_span) : 1.0f;
+        float assist_floor = mixf_local(min_effective_duty, recovery_duty, assist_ratio);
+
+        if (command < assist_floor) {
+            command = mixf_local(command, assist_floor, assist_ratio);
+        }
     }
 
     return clampf_local(command, 0.0f, PWM_MAX_DUTY);
