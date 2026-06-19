@@ -10,7 +10,6 @@ con `L298N` hasta el proyecto real con modulo SiC de potencia.
 | `PRUEBA0_SPWM_L298N` | Prueba de concepto con `STM32 NUCLEO-G474RE` y modulo `L298N`. | Referencia para entender la generacion SPWM, la medicion diferencial y el filtro LC inicial. |
 | `INVERSOR_SPWM_125K` | Firmware del proyecto real con `STM32F030C8T6`, PWM complementario a `125 kHz`, ADC y control `UCC_DISABLE`. | Desarrollo activo de control para el puente H real. |
 | `DOCUMENTACION` | Indices, fichas tecnicas, comparativas, arquitectura y checklists. | Punto de entrada principal para estudiar y continuar el proyecto. |
-| `_tmp_pdf_images` | Imagenes extraidas de PDFs durante la preparacion de documentacion. | Material auxiliar; no es firmware ni diseno fuente. |
 | `DISEÑO` | Archivos de diseno electronico. | No se modifica desde esta organizacion. |
 
 ## Ruta de lectura sugerida

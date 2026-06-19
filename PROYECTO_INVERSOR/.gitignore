@@ -1,0 +1,12 @@
+# Archivos locales del editor
+.vscode/
+**/.vscode/
+
+# Salidas regenerables de CMake/STM32CubeIDE
+**/build/
+**/mx.scratch/
+
+# Artefactos temporales de documentación
+tmp/
+_tmp*/
+

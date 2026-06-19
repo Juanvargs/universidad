@@ -131,6 +131,7 @@ proyecto. Deben verificarse contra el BOM final antes de comprar.
 | `DOCUMENTACION/03_componentes_principales.md` | Lista comentada de componentes principales. |
 | `DOCUMENTACION/04_checklist_integracion_validacion.md` | Validacion en banco y checklist de integracion. |
 | `DOCUMENTACION/05_firmware_spwm_stm32.md` | Firmware SPWM, `TIM1`, duty bipolar y futura lectura ADC. |
+| `DOCUMENTACION/Microinverter_application_note.pdf` | Nota de aplicacion complementaria sobre microinversores. |
 | `DOCUMENTACION/MSCSM120HM16CT3AG_ficha_tecnica.md` | Ficha tecnica organizada del modulo SiC. |
 | `DOCUMENTACION/MSCSM120HM16CT3AG_drivers_filtros_referencias.md` | Driver, fuente aislada, calculos de gate y referencias TI. |
 | `DOCUMENTACION/registro_cambios_diseno_inversor.md` | Cambios realizados frente a la plantilla TIDA. |
